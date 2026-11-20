@@ -175,6 +175,7 @@
   window.addEventListener("hashchange", render);
   window.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
+    if (event.hanseoPhoto || document.documentElement.classList.contains("photo-open")) return;
     if (cover) {
       hideBoard();
       return;
