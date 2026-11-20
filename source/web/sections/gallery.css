@@ -6,6 +6,112 @@
   min-height: 0;
 }
 
+html.book-show,
+html.book-show body,
+html.book-show .site,
+html.book-show .site-nav {
+  background: #efefef;
+}
+
+.book-show {
+  position: relative;
+  width: min(1170px, calc(100% - 48px));
+  margin: 36px auto 80px;
+}
+
+.book-caption {
+  max-width: 520px;
+  margin: 0 0 48px;
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 300;
+  line-height: 20px;
+}
+
+.book-frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+}
+
+.book-frame figure {
+  margin: 0;
+}
+
+.book-frame img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(1000px, calc(100% - 128px));
+  max-height: 76vh;
+  margin: 0 auto;
+  transition: opacity 0.2s ease;
+}
+
+.book-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #333333;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.book-arrow svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.book-arrow.is-prev {
+  left: 8px;
+}
+
+.book-arrow.is-next {
+  right: 8px;
+}
+
+.book-arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.book-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin: 30px 0 0;
+}
+
+.book-dots button {
+  width: 9px;
+  height: 9px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #000000;
+  opacity: 0.25;
+  cursor: pointer;
+}
+
+.book-dots button.is-on {
+  opacity: 1;
+}
+
 .project-label {
   position: static;
   margin: 6px 6px 16px;
@@ -121,6 +227,24 @@ html.photo-open .site-nav {
 @media (max-width: 720px) {
   .project {
     margin: 12px 0 28px;
+  }
+
+  .book-show {
+    width: calc(100% - 20px);
+    margin: 18px auto 48px;
+  }
+
+  .book-caption {
+    margin-bottom: 22px;
+  }
+
+  .book-frame {
+    min-height: 0;
+  }
+
+  .book-frame img {
+    max-width: calc(100% - 100px);
+    max-height: 74vh;
   }
 
   .project-label {

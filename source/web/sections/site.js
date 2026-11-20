@@ -130,7 +130,11 @@
     const project = route.id ? findProject(projects, route.id) : null;
     if (project) {
       document.title = (project.title || project.id) + " – Hanseo Kim";
-      setActive(window.HanseoGallery.open(view, project));
+      setActive(
+        window.HanseoGallery.open(view, project, {
+          layout: route.name === "books" ? "prints" : "mosaic",
+        })
+      );
       return;
     }
     document.title = sectionTitle + " – Hanseo Kim";

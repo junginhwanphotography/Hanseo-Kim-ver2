@@ -1,5 +1,133 @@
 (function () {
-  function open(root, project) {
+  function openPrints(root, project) {
+    const images = project.images || [];
+    root.replaceChildren();
+    document.documentElement.classList.add("book-show");
+    const article = document.createElement("article");
+    article.className = "book-show";
+    const caption = document.createElement("p");
+    caption.className = "book-caption";
+    const lines = [project.title || project.id || ""];
+    if (project.text) lines.push(project.text);
+    if (project.year) lines.push(project.year);
+    lines.filter(Boolean).forEach((line, lineIndex) => {
+      String(line)
+        .split("\n")
+        .forEach((part, partIndex) => {
+          if (lineIndex || partIndex) caption.appendChild(document.createElement("br"));
+          caption.appendChild(document.createTextNode(part));
+        });
+    });
+    const frame = document.createElement("div");
+    frame.className = "book-frame";
+    const figure = document.createElement("figure");
+    const img = document.createElement("img");
+    img.alt = project.title || "";
+    img.decoding = "async";
+    figure.appendChild(img);
+    const prev = document.createElement("button");
+    prev.type = "button";
+    prev.className = "book-arrow is-prev";
+    prev.setAttribute("aria-label", "Previous");
+    prev.innerHTML =
+      '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M67.37,100L28.195,50,67.37,0,71.8,5.5,37.581,50,71.8,94.5Z"></path></svg>';
+    const next = document.createElement("button");
+    next.type = "button";
+    next.className = "book-arrow is-next";
+    next.setAttribute("aria-label", "Next");
+    next.innerHTML =
+      '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M32.63,0,71.805,50,32.63,100,28.2,94.5,62.419,50,28.2,5.5Z"></path></svg>';
+    frame.append(prev, figure, next);
+    const dots = document.createElement("div");
+    dots.className = "book-dots";
+    const dotButtons = images.map((_, dotIndex) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("aria-label", "View slide " + (dotIndex + 1));
+      button.addEventListener("click", () => show(dotIndex));
+      dots.appendChild(button);
+      return button;
+    });
+    article.append(caption, frame, dots);
+    root.appendChild(article);
+
+    let index = 0;
+    let token = 0;
+    let touchStart = null;
+
+    function show(nextIndex) {
+      if (!images.length) return;
+      index = Math.max(0, Math.min(images.length - 1, nextIndex));
+      dotButtons.forEach((button, dotIndex) => {
+        const on = dotIndex === index;
+        button.classList.toggle("is-on", on);
+        if (on) button.setAttribute("aria-current", "true");
+        else button.removeAttribute("aria-current");
+      });
+      prev.disabled = index <= 0;
+      next.disabled = index >= images.length - 1;
+      const current = ++token;
+      img.style.opacity = "0";
+      const reveal = () => {
+        if (current !== token) return;
+        img.style.opacity = "1";
+      };
+      img.src = images[index];
+      if (img.complete && img.naturalWidth) reveal();
+      else img.addEventListener("load", reveal, { once: true });
+    }
+
+    function step(direction) {
+      show(index + direction);
+    }
+
+    prev.addEventListener("click", () => step(-1));
+    next.addEventListener("click", () => step(1));
+
+    function onKey(event) {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        step(-1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        step(1);
+      }
+    }
+
+    function onTouchStart(event) {
+      if (!event.changedTouches.length) return;
+      const touch = event.changedTouches[0];
+      touchStart = { x: touch.clientX, y: touch.clientY };
+    }
+
+    function onTouchEnd(event) {
+      if (!touchStart || !event.changedTouches.length) {
+        touchStart = null;
+        return;
+      }
+      const touch = event.changedTouches[0];
+      const dx = touchStart.x - touch.clientX;
+      const dy = touchStart.y - touch.clientY;
+      touchStart = null;
+      if (Math.abs(dx) < 28 || Math.abs(dx) < Math.abs(dy)) return;
+      step(dx > 0 ? 1 : -1);
+    }
+
+    window.addEventListener("keydown", onKey);
+    frame.addEventListener("touchstart", onTouchStart, { passive: true });
+    frame.addEventListener("touchend", onTouchEnd, { passive: true });
+    show(0);
+
+    return {
+      destroy() {
+        document.documentElement.classList.remove("book-show");
+        window.removeEventListener("keydown", onKey);
+      },
+    };
+  }
+
+  function open(root, project, options) {
+    if (options && options.layout === "prints") return openPrints(root, project);
     root.replaceChildren();
     const images = project.images || [];
     const article = document.createElement("article");
