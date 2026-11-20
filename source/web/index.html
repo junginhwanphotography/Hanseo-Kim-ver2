@@ -9,32 +9,53 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="hanseo.css?v=20" />
-    <link rel="stylesheet" href="sections/site.css?v=10" />
+    <link rel="stylesheet" href="hanseo.css?v=23" />
+    <link rel="stylesheet" href="sections/site.css?v=20" />
     <link rel="stylesheet" href="sections/recent.css?v=8" />
     <link rel="stylesheet" href="sections/books.css?v=2" />
-    <link rel="stylesheet" href="sections/info.css?v=3" />
+    <link rel="stylesheet" href="sections/contact.css?v=4" />
     <link rel="stylesheet" href="sections/gallery.css?v=18" />
     <script>
-      if (location.hash && location.hash !== "#" && location.hash !== "#intro") {
+      if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+      scrollTo(0, 0);
+      if (!location.hash || location.hash === "#" || location.hash === "#intro") {
+        document.documentElement.classList.add("board-on");
+      } else {
         document.documentElement.classList.add("enter-now");
+      }
+      function fitPhoneFrame() {
+        var phone = window.matchMedia("(max-width: 720px)").matches;
+        var viewport = window.visualViewport;
+        var height = viewport ? viewport.height : window.innerHeight;
+        document.documentElement.style.setProperty("--hanseo-vh", Math.round(height) + "px");
+        document.documentElement.style.setProperty("--hanseo-top", "0px");
+        if (phone && window.scrollY) scrollTo(0, 0);
+      }
+      fitPhoneFrame();
+      window.addEventListener("resize", fitPhoneFrame);
+      if (window.visualViewport) {
+        visualViewport.addEventListener("resize", fitPhoneFrame);
+        visualViewport.addEventListener("scroll", fitPhoneFrame, { passive: true });
       }
     </script>
   </head>
   <body>
     <header class="intro" id="intro">
-      <canvas class="intro-board" id="intro-board" aria-label="Drawing"></canvas>
+      <canvas class="intro-board" id="intro-board" aria-label="Drawing" style="touch-action: none"></canvas>
       <div class="paint" id="paint">
         <div class="paint-colors" role="group" aria-label="Colors">
-          <button type="button" class="paint-color is-on" data-color="#111111" style="background:#111111" aria-label="Black" aria-pressed="true"></button>
-          <button type="button" class="paint-color" data-color="#e10600" style="background:#e10600" aria-label="Red" aria-pressed="false"></button>
-          <button type="button" class="paint-color" data-color="#1c4fd8" style="background:#1c4fd8" aria-label="Blue" aria-pressed="false"></button>
-          <button type="button" class="paint-color" data-color="#1f9d3a" style="background:#1f9d3a" aria-label="Green" aria-pressed="false"></button>
-          <button type="button" class="paint-color" data-color="#ffd000" style="background:#ffd000" aria-label="Yellow" aria-pressed="false"></button>
-          <button type="button" class="paint-color" data-color="#ff4fa3" style="background:#ff4fa3" aria-label="Pink" aria-pressed="false"></button>
+          <button type="button" class="paint-color is-on" data-color="#d4533c" style="background:#d4533c" aria-label="Red" aria-pressed="true"></button>
+          <button type="button" class="paint-color" data-color="#e48a32" style="background:#e48a32" aria-label="Orange" aria-pressed="false"></button>
+          <button type="button" class="paint-color" data-color="#e2b33a" style="background:#e2b33a" aria-label="Yellow" aria-pressed="false"></button>
+          <button type="button" class="paint-color" data-color="#6e9a4e" style="background:#6e9a4e" aria-label="Green" aria-pressed="false"></button>
+          <button type="button" class="paint-color" data-color="#3f7c9a" style="background:#3f7c9a" aria-label="Blue" aria-pressed="false"></button>
+          <button type="button" class="paint-color" data-color="#8d5d86" style="background:#8d5d86" aria-label="Purple" aria-pressed="false"></button>
         </div>
         <div class="paint-tools" role="group" aria-label="Tools">
-          <button type="button" class="paint-tool is-on" data-tool="pencil" aria-label="Pencil" aria-pressed="true">
+          <button type="button" class="paint-tool is-on" data-tool="gpen" aria-label="G pen" aria-pressed="true">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 11.2 9.2c.5 1.2.4 2.2 0 3.1C10.6 13.4 9.4 14 8 14s-2.6-.6-3.2-1.7c-.4-.9-.5-1.9 0-3.1L8 1.8z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 7.2v6.2" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
+          <button type="button" class="paint-tool" data-tool="pencil" aria-label="Pencil" aria-pressed="false">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.2 13.8 3.4 10 11.2 2.2l2.6 2.6L6 12.6 2.2 13.8z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
           </button>
           <button type="button" class="paint-tool" data-tool="marker" aria-label="Marker" aria-pressed="false">
@@ -56,24 +77,29 @@
       </div>
       <div class="intro-copy">
         <h1 class="intro-name">Hanseo Kim</h1>
-        <a class="enter" id="enter" href="#recent">click here to enter</a>
+        <button type="button" class="enter" id="enter">click here to enter</button>
       </div>
     </header>
 
     <div class="site" id="site">
-      <header class="site-nav">
-        <nav aria-label="Site">
-          <ul>
-            <li><a href="#intro" data-nav="intro">Hanseo Kim</a></li>
-            <li><a href="#recent" data-nav="recent">Recent Pictures</a></li>
-            <li><a href="#books" data-nav="books">Books and Printed Work</a></li>
-            <li><a href="#info" data-nav="info">Info</a></li>
-          </ul>
+      <aside class="side">
+        <a class="side-name" href="#intro" data-nav="intro">Hanseo Kim</a>
+        <nav class="side-menu" aria-label="Site">
+          <button type="button" data-nav="photographs" aria-expanded="false">photographs</button>
+          <a href="#books" data-nav="books">books and printed work</a>
+          <a href="#contact" data-nav="contact">contact</a>
+          <ul class="side-collections" id="side-collections" hidden></ul>
         </nav>
-      </header>
+        <div class="side-preview" id="side-preview" aria-hidden="true">
+          <img alt="" />
+        </div>
+      </aside>
       <div class="site-view" id="site-view"></div>
     </div>
 
+    <script src="sections/tags.js?v=12"></script>
+    <script src="sections/hand.js?v=2"></script>
+    <script src="sections/ink.js?v=24"></script>
     <script>
       const intro = document.getElementById("intro");
       const board = document.getElementById("intro-board");
@@ -82,17 +108,24 @@
       const boardCtx = board.getContext("2d");
       const paintStrokes = [];
       const paintTools = {
+        gpen: { size: 22, erase: false, wiggle: false },
         pencil: { size: 2.2, erase: false, wiggle: false },
         marker: { size: 14, erase: false, wiggle: false },
         wiggle: { size: 4, erase: false, wiggle: true },
         eraser: { size: 28, erase: true, wiggle: false },
       };
-      let paintTool = "pencil";
-      let paintColor = "#111111";
+      let paintTool = "gpen";
+      let paintColor = "#d4533c";
       let paintStroke = null;
       let paintPointer = null;
 
+      let paintNeedsSize = false;
+
       function sizeBoard() {
+        if (paintStroke) {
+          paintNeedsSize = true;
+          return;
+        }
         const rect = board.getBoundingClientRect();
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const width = Math.max(1, Math.floor(rect.width * dpr));
@@ -106,7 +139,7 @@
 
       function paintPoint(event) {
         const rect = board.getBoundingClientRect();
-        return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+        return { x: event.clientX - rect.left, y: event.clientY - rect.top, t: performance.now() };
       }
 
       function traceStroke(ctx, stroke) {
@@ -134,13 +167,72 @@
         }
       }
 
+      function gpenRadius(speed, size) {
+        const slow = 0.12;
+        const fast = 1.6;
+        const pace = Math.min(1, Math.max(0, (speed - slow) / (fast - slow)));
+        const weight = Math.pow(1 - pace, 1.4);
+        return size * (0.18 + 0.36 * weight);
+      }
+
+      function stampGpen(ctx, x, y, radius) {
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(0.8, radius), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function gpenPointRadius(stroke, index) {
+        const points = stroke.points;
+        if (index === 0) return stroke.size * 0.46;
+        const prev = points[index - 1];
+        const point = points[index];
+        const dist = Math.hypot(point.x - prev.x, point.y - prev.y);
+        const dt = point.t != null && prev.t != null ? Math.max(1, point.t - prev.t) : 16;
+        const raw = gpenRadius(dist / dt, stroke.size);
+        const prevRadius = prev._r != null ? prev._r : stroke.size * 0.46;
+        return prevRadius * 0.35 + raw * 0.65;
+      }
+
+      function drawGpenSpan(ctx, stroke, from) {
+        const points = stroke.points;
+        ctx.fillStyle = stroke.color;
+        const start = Math.max(0, from);
+        if (start === 0 && points[0]) points[0]._r = stroke.size * 0.46;
+        if (points.length === 1) {
+          stampGpen(ctx, points[0].x, points[0].y, points[0]._r);
+          return;
+        }
+        for (let i = Math.max(1, start); i < points.length; i += 1) {
+          points[i]._r = gpenPointRadius(stroke, i);
+          const a = points[i - 1];
+          const b = points[i];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const len = Math.hypot(dx, dy) || 1;
+          const steps = Math.max(1, Math.ceil(len / 1.6));
+          for (let step = 0; step <= steps; step += 1) {
+            const t = step / steps;
+            stampGpen(ctx, a.x + dx * t, a.y + dy * t, a._r + (b._r - a._r) * t);
+          }
+        }
+      }
+
+      function drawGpen(ctx, stroke) {
+        drawGpenSpan(ctx, stroke, 0);
+      }
+
       function drawStroke(stroke) {
         boardCtx.save();
+        boardCtx.globalCompositeOperation = stroke.erase ? "destination-out" : "source-over";
+        if (stroke.pen === "gpen" && !stroke.erase) {
+          drawGpen(boardCtx, stroke);
+          boardCtx.restore();
+          return;
+        }
         boardCtx.lineCap = "round";
         boardCtx.lineJoin = "round";
         boardCtx.lineWidth = stroke.size;
         boardCtx.strokeStyle = stroke.color;
-        boardCtx.globalCompositeOperation = stroke.erase ? "destination-out" : "source-over";
         traceStroke(boardCtx, stroke);
         boardCtx.stroke();
         boardCtx.restore();
@@ -153,6 +245,19 @@
         boardCtx.restore();
         paintStrokes.forEach(drawStroke);
       }
+
+      function clearPaint() {
+        paintStroke = null;
+        paintPointer = null;
+        paintStrokes.length = 0;
+        redrawBoard();
+        syncPaintUi();
+      }
+
+      window.HanseoPaint = { clear: clearPaint };
+      window.addEventListener("hanseo-seal", () => {
+        if (window.HanseoInk) window.HanseoInk.seal(paintStrokes);
+      });
 
       function syncPaintUi() {
         document.querySelectorAll("[data-tool]").forEach((button) => {
@@ -175,7 +280,7 @@
         if (toolButton) paintTool = toolButton.dataset.tool;
         if (colorButton) {
           paintColor = colorButton.dataset.color;
-          if (paintTool === "eraser") paintTool = "pencil";
+          if (paintTool === "eraser") paintTool = "gpen";
         }
         if (toolButton || colorButton) syncPaintUi();
       });
@@ -185,61 +290,197 @@
         paintStrokes.pop();
         redrawBoard();
         syncPaintUi();
+        if (window.HanseoInk) window.HanseoInk.schedule(paintStrokes);
       });
 
       paintClear.addEventListener("click", () => {
-        paintStroke = null;
-        paintPointer = null;
-        paintStrokes.length = 0;
-        redrawBoard();
-        syncPaintUi();
+        clearPaint();
+        if (window.HanseoInk) window.HanseoInk.cancel();
       });
 
-      board.addEventListener("pointerdown", (event) => {
-        if (paintPointer !== null) return;
-        if (event.pointerType === "mouse" && event.button !== 0) return;
+      function clientPoint(clientX, clientY) {
+        const rect = board.getBoundingClientRect();
+        return { x: clientX - rect.left, y: clientY - rect.top, t: performance.now() };
+      }
+
+      function beginStroke(point, pointerId) {
+        if (paintStroke) return;
         const spec = paintTools[paintTool];
-        const point = paintPoint(event);
-        paintPointer = event.pointerId;
+        paintPointer = pointerId;
         paintStroke = {
           size: spec.size,
           erase: spec.erase,
           wiggle: spec.wiggle,
           color: paintColor,
+          pen: paintTool,
+          at: Date.now(),
           points: [point],
         };
         paintStrokes.push(paintStroke);
         drawStroke(paintStroke);
         syncPaintUi();
-        board.setPointerCapture(event.pointerId);
+        document.documentElement.classList.add("is-drawing");
+        if (window.HanseoInk) window.HanseoInk.cancel();
+      }
+
+      function addPoint(point, touch) {
+        if (!paintStroke) return;
+        const last = paintStroke.points[paintStroke.points.length - 1];
+        if (Math.hypot(point.x - last.x, point.y - last.y) < (touch ? 0.7 : 1.4)) return;
+        paintStroke.points.push(point);
+        if (paintStroke.pen === "gpen" && !paintStroke.erase) {
+          boardCtx.save();
+          boardCtx.globalCompositeOperation = "source-over";
+          drawGpenSpan(boardCtx, paintStroke, paintStroke.points.length - 1);
+          boardCtx.restore();
+          return;
+        }
+        redrawBoard();
+      }
+
+      function finishStroke() {
+        if (!paintStroke && paintPointer === null) return;
+        paintPointer = null;
+        paintStroke = null;
+        document.documentElement.classList.remove("is-drawing");
+        syncPaintUi();
+        if (window.HanseoInk) window.HanseoInk.schedule(paintStrokes);
+        if (paintNeedsSize) {
+          paintNeedsSize = false;
+          sizeBoard();
+        }
+      }
+
+      let paintTouch = 0;
+      let cancelFinish = 0;
+
+      function finishIfCancelled() {
+        clearTimeout(cancelFinish);
+        cancelFinish = setTimeout(() => {
+          if (paintPointer === "touch" && paintStroke) finishStroke();
+        }, 80);
+      }
+
+      function keepStroke() {
+        clearTimeout(cancelFinish);
+      }
+
+      board.addEventListener(
+        "touchstart",
+        (event) => {
+          event.preventDefault();
+          keepStroke();
+          if (event.touches.length !== 1) return;
+          const touch = event.touches[0];
+          if (paintStroke && paintPointer === "touch") {
+            if (!paintTouch || paintTouch === touch.identifier) {
+              paintTouch = touch.identifier;
+              return;
+            }
+            finishStroke();
+          }
+          if (paintStroke) return;
+          paintTouch = touch.identifier;
+          beginStroke(clientPoint(touch.clientX, touch.clientY), "touch");
+        },
+        { passive: false }
+      );
+
+      board.addEventListener(
+        "touchmove",
+        (event) => {
+          event.preventDefault();
+          keepStroke();
+          if (paintPointer !== "touch" || !paintStroke) return;
+          const touch = [...event.touches].find((item) => item.identifier === paintTouch);
+          if (!touch) return;
+          addPoint(clientPoint(touch.clientX, touch.clientY), true);
+        },
+        { passive: false }
+      );
+
+      function endTouch(event) {
+        if (paintPointer !== "touch") return;
+        const ended = [...(event.changedTouches || [])].some((item) => item.identifier === paintTouch);
+        if (!ended && paintTouch) return;
+        event.preventDefault();
+        keepStroke();
+        finishStroke();
+      }
+
+      board.addEventListener("touchend", endTouch, { passive: false });
+      board.addEventListener(
+        "touchcancel",
+        (event) => {
+          event.preventDefault();
+          finishIfCancelled();
+        },
+        { passive: false }
+      );
+
+      function addPointerPoints(event, touch) {
+        const list = event.getCoalescedEvents ? event.getCoalescedEvents() : [event];
+        list.forEach((item) => addPoint(clientPoint(item.clientX, item.clientY), touch));
+      }
+
+      board.addEventListener("pointerdown", (event) => {
+        if (event.pointerType === "touch") {
+          event.preventDefault();
+          if (!paintStroke) beginStroke(clientPoint(event.clientX, event.clientY), "touch");
+          return;
+        }
+        if (paintStroke) return;
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        beginStroke(clientPoint(event.clientX, event.clientY), event.pointerId);
+        if (event.pointerType === "mouse") {
+          try {
+            board.setPointerCapture(event.pointerId);
+          } catch (error) {}
+        }
         event.preventDefault();
       });
 
       board.addEventListener("pointermove", (event) => {
+        if (event.pointerType === "touch") {
+          if (paintPointer !== "touch" || !paintStroke) return;
+          event.preventDefault();
+          keepStroke();
+          addPointerPoints(event, true);
+          return;
+        }
         if (event.pointerId !== paintPointer || !paintStroke) return;
-        const point = paintPoint(event);
-        const last = paintStroke.points[paintStroke.points.length - 1];
-        if (Math.hypot(point.x - last.x, point.y - last.y) < 1.4) return;
-        paintStroke.points.push(point);
-        redrawBoard();
+        event.preventDefault();
+        addPointerPoints(event, false);
       });
 
       function endPaint(event) {
+        if (event.pointerType === "touch") {
+          if (paintPointer === "touch") {
+            keepStroke();
+            finishStroke();
+          }
+          return;
+        }
         if (event.pointerId !== paintPointer) return;
-        paintPointer = null;
-        paintStroke = null;
-        syncPaintUi();
+        finishStroke();
       }
 
       board.addEventListener("pointerup", endPaint);
-      board.addEventListener("pointercancel", endPaint);
+      board.addEventListener("pointercancel", (event) => {
+        if (event.pointerType === "touch") {
+          event.preventDefault();
+          finishIfCancelled();
+          return;
+        }
+        endPaint(event);
+      });
       sizeBoard();
       window.addEventListener("resize", sizeBoard);
     </script>
-    <script src="sections/gallery.js?v=18"></script>
+    <script src="sections/gallery.js?v=19"></script>
     <script src="sections/recent.js?v=3"></script>
     <script src="sections/books.js?v=1"></script>
-    <script src="sections/info.js?v=2"></script>
-    <script src="sections/site.js?v=11"></script>
+    <script src="sections/contact.js?v=3"></script>
+    <script src="sections/site.js?v=26"></script>
   </body>
 </html>

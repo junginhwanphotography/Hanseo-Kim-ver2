@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { RECENT_DIR, BOOKS_DIR, INFO_DIR, WEB } = require("./paths");
+const { RECENT_DIR, BOOKS_DIR, CONTACT_DIR, WEB, COLLECTIONS_URL } = require("./paths");
 
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp"]);
 
@@ -156,12 +156,12 @@ function rtfPlain(rtf) {
   return text.replace(/^\n+|\n+$/g, "").trim();
 }
 
-function readInfo() {
+function readContact() {
   try {
-    const rich = path.join(INFO_DIR, "info.rtf");
+    const rich = path.join(CONTACT_DIR, "contact.rtf");
     if (fs.existsSync(rich)) return rtfPlain(fs.readFileSync(rich, "utf8"));
     return fs
-      .readFileSync(path.join(INFO_DIR, "info.txt"), "utf8")
+      .readFileSync(path.join(CONTACT_DIR, "contact.txt"), "utf8")
       .replace(/^\uFEFF/, "")
       .split(/\r?\n/)
       .filter((line) => !/^\s*\/\//.test(line))
@@ -175,9 +175,9 @@ function readInfo() {
 function buildCatalog() {
   const createdIndex = readCreatedIndex();
   return {
-    recent: listProjects(RECENT_DIR, "recent-pictures", createdIndex),
+    recent: listProjects(RECENT_DIR, COLLECTIONS_URL, createdIndex),
     books: listProjects(BOOKS_DIR, "books-and-printed-work", createdIndex),
-    info: readInfo(),
+    contact: readContact(),
   };
 }
 

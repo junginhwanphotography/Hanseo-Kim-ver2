@@ -227,9 +227,9 @@
   function render(root, source) {
     let cancelled = false;
     root.replaceChildren();
-    fetch("info/info.rtf", { cache: "no-store" })
+    fetch("contact/contact.rtf", { cache: "no-store" })
       .then((res) => {
-        if (!res.ok) throw new Error("info");
+        if (!res.ok) throw new Error("contact");
         return res.text();
       })
       .then((rtf) => {
@@ -249,5 +249,5 @@
     };
   }
 
-  window.HanseoInfo = { render };
+  window.HanseoContact = { render };
 })();

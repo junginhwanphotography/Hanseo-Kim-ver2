@@ -10,10 +10,12 @@ body {
   height: 100%;
   background: #ffffff;
   color: #000000;
+  overflow: hidden;
+  overflow-anchor: none;
+  overscroll-behavior: none;
 }
 
 body {
-  overflow: hidden;
   font-family: "Inter", system-ui, sans-serif;
 }
 
@@ -31,13 +33,29 @@ a {
   inset: 0;
   z-index: 30;
   background: #ffffff;
-  transform: translate3d(0, 0, 0);
   transition: transform 1.15s cubic-bezier(0.76, 0, 0.18, 1);
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html.is-drawing,
+html.is-drawing body {
+  overflow: hidden;
+  touch-action: none;
 }
 
 .intro.is-leaving {
   transform: translate3d(0, -100%, 0);
   pointer-events: none;
+}
+
+.intro.is-away {
+  transform: none;
+  visibility: hidden;
+  transition: none;
 }
 
 html.enter-now .intro {
@@ -136,16 +154,22 @@ html.intro-cover .intro {
 
 .intro-copy {
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 50%;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 28px;
+  width: max-content;
+  max-width: calc(100% - 48px);
   margin: 0;
   text-align: center;
   pointer-events: none;
+  touch-action: none;
+  transform: translate(-50%, -50%);
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .intro-name {
@@ -158,14 +182,19 @@ html.intro-cover .intro {
 }
 
 .enter {
+  margin: 0;
+  padding: 0 0 2px;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: #000000;
+  font: inherit;
   font-size: 13px;
   font-weight: 400;
   letter-spacing: 0.04em;
   line-height: 1;
-  color: #000000;
   text-decoration: none;
-  border-bottom: 1px solid currentColor;
-  padding-bottom: 2px;
+  cursor: pointer;
   pointer-events: auto;
 }
 

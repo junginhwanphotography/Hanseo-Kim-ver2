@@ -5,7 +5,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { WEB, SITE_OUT, RECENT_DIR, BOOKS_DIR, INFO_DIR } = require("./paths");
+const { WEB, SITE_OUT, RECENT_DIR, BOOKS_DIR, CONTACT_DIR, COLLECTIONS_URL } = require("./paths");
 const { buildCatalog } = require("./catalog");
 const { buildGridThumbs } = require("./build-grid-thumbs");
 
@@ -17,9 +17,9 @@ async function preparePages() {
   fs.mkdirSync(dest, { recursive: true });
   fs.cpSync(WEB, dest, { recursive: true });
   const sections = [
-    [RECENT_DIR, "recent-pictures"],
+    [RECENT_DIR, COLLECTIONS_URL],
     [BOOKS_DIR, "books-and-printed-work"],
-    [INFO_DIR, "info"],
+    [CONTACT_DIR, "contact"],
   ];
   for (const [src, name] of sections) {
     if (fs.existsSync(src)) fs.cpSync(src, path.join(dest, name), { recursive: true, dereference: true });

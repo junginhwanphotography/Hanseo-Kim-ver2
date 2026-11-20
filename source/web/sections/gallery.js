@@ -130,6 +130,7 @@
     const images = project.images || [];
     const article = document.createElement("article");
     article.className = "project";
+    const showLabel = !options || options.label !== false;
     const label = document.createElement("p");
     label.className = "project-label";
     label.append(document.createTextNode(project.title || project.id || ""));
@@ -150,7 +151,8 @@
       mosaic.appendChild(figure);
       return { el: figure, img };
     });
-    article.append(label, mosaic);
+    if (showLabel) article.append(label);
+    article.append(mosaic);
     root.appendChild(article);
 
     let frame = 0;

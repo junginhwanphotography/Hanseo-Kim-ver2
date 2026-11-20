@@ -14,7 +14,7 @@ describe("HTTP 서버 기본 동작", () => {
     const response = await request(server).get("/?v=1");
 
     expect(response.status).toBe(200);
-    expect(response.text).toContain("Recent Pictures");
+    expect(response.text).toContain("photographs");
   });
 
   it("컬렉션 JSON을 web에서 제공한다", async () => {
@@ -50,15 +50,35 @@ describe("HTTP 서버 기본 동작", () => {
       "WALL",
       "통신보안",
     ]);
-    expect(response.body.recent[0].images[0]).toMatch(/^recent-pictures\//);
+    expect(response.body.recent[0].images[0]).toMatch(/^photographs\//);
+    const tagged = [];
+    response.body.recent.forEach((item) => {
+      item.images.forEach((src) => {
+        const name = decodeURIComponent(src.split("/").pop());
+        if (/_[A-Za-z]+\./.test(name)) tagged.push(name);
+      });
+    });
+    expect(tagged).toEqual([
+      "0601-13_sex.jpg",
+      "3_sun.jpg",
+      "10_sun.jpg",
+      "11_sun.jpg",
+      "10_sun.jpg",
+      "14_sex.jpg",
+      "16_sun.jpg",
+      "3_sex.jpg",
+      "16_sex.jpg",
+    ]);
     expect(response.body.recent.some((item) => item.id === "_WALL")).toBe(false);
     expect(Array.isArray(response.body.books)).toBe(true);
-    expect(response.body.info).toContain("kimhanseo123@naver.com");
-    expect(response.body.info).toContain("For Contact:");
+    expect(response.body.contact).toContain("kimhanseo123@naver.com");
+    expect(response.body.contact).toContain("For Contact:");
 
-    const rich = await request(server).get("/info/info.rtf");
+    const rich = await request(server).get("/contact/contact.rtf");
+    const oldRich = await request(server).get("/info/info.rtf");
     expect(rich.status).toBe(200);
     expect(rich.text).toContain("kimhanseo123@naver.com");
+    expect(oldRich.status).toBe(404);
 
     const image = await request(server).get("/" + response.body.recent[0].images[0]);
     expect(image.status).toBe(200);

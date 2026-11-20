@@ -4,12 +4,12 @@ const path = require("path");
 
 const PORT = process.env.PORT || 3000;
 const { buildCatalog } = require("./catalog");
-const { WEB, RECENT_DIR, BOOKS_DIR, INFO_DIR } = require("./paths");
+const { WEB, RECENT_DIR, BOOKS_DIR, CONTACT_DIR, COLLECTIONS_URL } = require("./paths");
 
 const CONTENT_ROOTS = {
-  "recent-pictures": RECENT_DIR,
+  [COLLECTIONS_URL]: RECENT_DIR,
   "books-and-printed-work": BOOKS_DIR,
-  info: INFO_DIR,
+  contact: CONTACT_DIR,
 };
 const CONTENT_EXT = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".txt", ".rtf"]);
 
@@ -71,7 +71,7 @@ const server = http.createServer((req, res) => {
     if (ext === ".jpg" || ext === ".jpeg" || ext === ".png" || ext === ".webp" || ext === ".gif") {
       headers["Cache-Control"] = "public, max-age=86400";
     } else if (ext === ".html" || ext === ".css" || ext === ".js" || ext === ".rtf") {
-      headers["Cache-Control"] = "no-cache";
+      headers["Cache-Control"] = "no-store";
     }
     res.writeHead(200, headers);
     res.end(data);
