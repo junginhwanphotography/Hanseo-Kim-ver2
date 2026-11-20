@@ -32,9 +32,7 @@
       const width = mosaic.clientWidth;
       if (width < 20 || !items.length) return;
       const gutter = 10;
-      const minColumn = 410;
-      const rail = 155;
-      const columns = Math.max(1, Math.floor(Math.max(width - rail, 1) / minColumn));
+      const columns = width < 720 ? 1 : 3;
       const base = Math.floor((width - gutter * (columns - 1)) / columns);
       const heights = Array(columns).fill(0);
       items.forEach(({ el, img }) => {
