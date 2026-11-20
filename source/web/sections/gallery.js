@@ -2,7 +2,6 @@
   function openPrints(root, project) {
     const images = project.images || [];
     root.replaceChildren();
-    document.documentElement.classList.add("book-show");
     const article = document.createElement("article");
     article.className = "book-show";
     const caption = document.createElement("p");
@@ -120,7 +119,6 @@
 
     return {
       destroy() {
-        document.documentElement.classList.remove("book-show");
         window.removeEventListener("keydown", onKey);
       },
     };

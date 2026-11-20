@@ -6,13 +6,6 @@
   min-height: 0;
 }
 
-html.book-show,
-html.book-show body,
-html.book-show .site,
-html.book-show .site-nav {
-  background: #efefef;
-}
-
 .book-show {
   position: relative;
   width: min(1170px, calc(100% - 48px));
@@ -33,20 +26,29 @@ html.book-show .site-nav {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 420px;
+  height: min(520px, 58vh);
 }
 
 .book-frame figure {
+  position: relative;
+  width: min(720px, calc(100% - 128px));
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   margin: 0;
+  overflow: hidden;
 }
 
 .book-frame img {
+  position: absolute;
+  inset: 0;
   display: block;
   width: auto;
   height: auto;
-  max-width: min(1000px, calc(100% - 128px));
-  max-height: 76vh;
-  margin: 0 auto;
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
+  object-fit: contain;
   transition: opacity 0.2s ease;
 }
 
@@ -239,12 +241,12 @@ html.photo-open .site-nav {
   }
 
   .book-frame {
-    min-height: 0;
+    height: 52vh;
   }
 
-  .book-frame img {
-    max-width: calc(100% - 100px);
-    max-height: 74vh;
+  .book-frame figure {
+    width: calc(100% - 100px);
+    height: 100%;
   }
 
   .project-label {
