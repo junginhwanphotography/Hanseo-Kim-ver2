@@ -74,12 +74,7 @@
 
     function placeStage() {
       if (!stage) return;
-      if (window.matchMedia("(max-width: 720px)").matches) {
-        closeViewer();
-        return;
-      }
-      const nav = document.querySelector(".site-nav");
-      stage.style.top = (nav ? nav.offsetHeight : 0) + "px";
+      if (window.matchMedia("(max-width: 720px)").matches) closeViewer();
     }
 
     function arm(next) {
