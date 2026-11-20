@@ -32,11 +32,14 @@ describe("사진 태그", () => {
     expect(tags.matchWord("s u n", ["sun"])).toBe("sun");
     expect(tags.matchWord("xxsunyy", ["sun", "sex"])).toBe("sun");
     expect(tags.matchWord("gsex", ["sun", "sex"])).toBe("sex");
-    expect(tags.matchWord("gum", ["sun", "sex"])).toBe("sun");
-    expect(tags.matchWord("gex", ["sun", "sex"])).toBe("sex");
-    expect(tags.matchWord("sum", ["sun"])).toBe("sun");
+    expect(tags.matchWord("gum", ["sun", "sex"], null, true)).toBe("sun");
+    expect(tags.matchWord("gex", ["sun", "sex"], null, true)).toBe("sex");
+    expect(tags.matchWord("sum", ["sun"], null, true)).toBe("sun");
     expect(tags.matchWord("se", ["sex"], null, false)).toBe("");
+    expect(tags.matchWord("se", ["sex"], null, true)).toBe("");
     expect(tags.matchWord("su", ["sun", "sex"], null, false)).toBe("");
+    expect(tags.matchWord("su", ["sun", "sex"], null, true)).toBe("");
+    expect(tags.matchWord("s", ["sun", "sex"], null, true)).toBe("");
     expect(tags.matchWord("cat", ["sun"])).toBe("");
     expect(tags.matchWord("moon", ["sun", "moon"])).toBe("moon");
   });

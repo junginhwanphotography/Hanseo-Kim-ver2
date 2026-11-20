@@ -72,10 +72,10 @@
   function windowScore(letters, tag) {
     if (!letters || !tag) return 0;
     if (letters.indexOf(tag) !== -1) return 1;
+    if (letters.length < tag.length) return 0;
     let best = 0;
-    const min = Math.max(1, tag.length - 1);
     const max = tag.length + 2;
-    for (let len = min; len <= max; len += 1) {
+    for (let len = tag.length; len <= max; len += 1) {
       if (letters.length < len) continue;
       for (let start = 0; start + len <= letters.length; start += 1) {
         const word = letters.slice(start, start + len);
@@ -83,12 +83,6 @@
         const score = 1 - cost / Math.max(tag.length, word.length);
         if (score > best) best = score;
       }
-    }
-    if (letters.length < tag.length) {
-      const cost = distance(letters, tag.slice(0, letters.length));
-      const prefix = 1 - cost / tag.length;
-      const progress = letters.length / tag.length;
-      best = Math.max(best, prefix * progress * 0.9);
     }
     return best;
   }
@@ -186,6 +180,9 @@
   }
 
   function scoreTag(letters, tag, canvas) {
+    if (!tag) return 0;
+    if (letters && letters.indexOf(tag) !== -1) return 1;
+    if (!letters || letters.length < tag.length) return 0;
     const text = windowScore(letters, tag);
     if (!canvas) return text;
     const image = imageScore(canvas, tag);
@@ -196,23 +193,19 @@
     const known = [...new Set((tags || []).map((tag) => String(tag).toLowerCase()).filter(Boolean))];
     const letters = lettersOf(text);
     if (!known.length) return "";
-    if (letters) {
-      let exact = "";
-      known.forEach((tag) => {
-        if (letters.indexOf(tag) !== -1 && tag.length > exact.length) exact = tag;
-      });
-      if (exact) return exact;
-    }
+    let exact = "";
+    known.forEach((tag) => {
+      if (letters.indexOf(tag) !== -1 && tag.length > exact.length) exact = tag;
+    });
+    if (exact) return exact;
     const ranked = known
-      .map((tag) => {
-        let score = scoreTag(letters, tag, canvas);
-        if (!settle && letters.length && letters.length < tag.length) score = Math.min(score, 0.48);
-        return { tag, score };
-      })
+      .map((tag) => ({ tag, score: scoreTag(letters, tag, canvas) }))
+      .filter((item) => item.score > 0)
       .sort((a, b) => b.score - a.score || b.tag.length - a.tag.length);
     const best = ranked[0];
     const second = ranked[1];
     if (!best || best.score < 0.54) return "";
+    if (!settle && best.score < 0.72) return "";
     if (second && best.score - second.score < 0.045 && best.score < 0.8) return "";
     return best.tag;
   }
