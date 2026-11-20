@@ -1,9 +1,0 @@
-// 왼쪽 글은 ::contact 위에, 오른쪽 글은 ::contact 아래에 둡니다.
-// 오른쪽 첫 줄은 밑줄 제목이 됩니다. ::note 는 아래 작은 글입니다.
-// 빈 줄은 문단을 나눕니다. 메일 주소와 http 링크는 자동으로 연결됩니다.
-
-Hanseo Kim
-
-::contact
-Contact
-kimhanseo123@naver.com

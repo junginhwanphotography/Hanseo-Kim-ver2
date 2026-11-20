@@ -110,8 +110,56 @@ function listProjects(dir, urlPrefix, createdIndex) {
     .map(({ created, order, ...project }) => project);
 }
 
+function rtfPlain(rtf) {
+  let source = String(rtf).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  source = source.replace(/\{\\fonttbl[\s\S]*?\}/g, "");
+  source = source.replace(/\{\\colortbl[\s\S]*?\}/g, "");
+  source = source.replace(/\{\\\*\\[^{}]*\}/g, "");
+  source = source.replace(/\\\n/g, "\n");
+  source = source.replace(/\n/g, "");
+  let text = "";
+  let index = 0;
+  while (index < source.length) {
+    const hexRun = source.slice(index).match(/^(?:\\'[0-9a-fA-F]{2})+/);
+    if (hexRun) {
+      const bytes = hexRun[0].match(/[0-9a-fA-F]{2}/g).map((hex) => parseInt(hex, 16));
+      text += new TextDecoder("euc-kr").decode(Uint8Array.from(bytes));
+      index += hexRun[0].length;
+      continue;
+    }
+    const unicode = source.slice(index).match(/^\\u(-?\d+)\??/);
+    if (unicode) {
+      let code = Number(unicode[1]);
+      if (code < 0) code += 65536;
+      text += String.fromCharCode(code);
+      index += unicode[0].length;
+      continue;
+    }
+    const control = source.slice(index).match(/^\\([a-zA-Z]+)(-?\d+)? ?/);
+    if (control) {
+      if (control[1] === "par" || control[1] === "line") text += "\n";
+      index += control[0].length;
+      continue;
+    }
+    if (source[index] === "\\" && "\\{}".includes(source[index + 1])) {
+      text += source[index + 1];
+      index += 2;
+      continue;
+    }
+    if (source[index] === "{" || source[index] === "}") {
+      index += 1;
+      continue;
+    }
+    text += source[index];
+    index += 1;
+  }
+  return text.replace(/^\n+|\n+$/g, "").trim();
+}
+
 function readInfo() {
   try {
+    const rich = path.join(INFO_DIR, "info.rtf");
+    if (fs.existsSync(rich)) return rtfPlain(fs.readFileSync(rich, "utf8"));
     return fs
       .readFileSync(path.join(INFO_DIR, "info.txt"), "utf8")
       .replace(/^\uFEFF/, "")

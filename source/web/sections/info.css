@@ -19,8 +19,23 @@
   text-underline-offset: 2px;
 }
 
-.info a {
+.info a,
+.info-rich a {
   color: inherit;
+  text-decoration: none;
+}
+
+.info-rich a:hover {
+  opacity: 0.45;
+}
+
+.info-rich {
+  width: min(920px, calc(100% - 64px));
+  margin: 58px auto 88px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+  white-space: pre-wrap;
 }
 
 .info-note {
@@ -31,10 +46,14 @@
 }
 
 @media (max-width: 720px) {
+  .info,
+  .info-rich {
+    width: calc(100% - 36px);
+    margin-top: 32px;
+  }
+
   .info {
     grid-template-columns: 1fr;
     row-gap: 28px;
-    width: calc(100% - 36px);
-    margin-top: 32px;
   }
 }

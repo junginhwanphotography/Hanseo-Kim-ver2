@@ -54,6 +54,11 @@ describe("HTTP 서버 기본 동작", () => {
     expect(response.body.recent.some((item) => item.id === "_WALL")).toBe(false);
     expect(Array.isArray(response.body.books)).toBe(true);
     expect(response.body.info).toContain("kimhanseo123@naver.com");
+    expect(response.body.info).toContain("For Contact:");
+
+    const rich = await request(server).get("/info/info.rtf");
+    expect(rich.status).toBe(200);
+    expect(rich.text).toContain("kimhanseo123@naver.com");
 
     const image = await request(server).get("/" + response.body.recent[0].images[0]);
     expect(image.status).toBe(200);

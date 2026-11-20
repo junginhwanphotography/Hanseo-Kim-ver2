@@ -11,7 +11,7 @@ const CONTENT_ROOTS = {
   "books-and-printed-work": BOOKS_DIR,
   info: INFO_DIR,
 };
-const CONTENT_EXT = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".txt"]);
+const CONTENT_EXT = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".txt", ".rtf"]);
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -25,6 +25,7 @@ const MIME_TYPES = {
   ".gif": "image/gif",
   ".webp": "image/webp",
   ".txt": "text/plain; charset=utf-8",
+  ".rtf": "application/rtf",
   ".xml": "application/xml; charset=utf-8",
 };
 
@@ -69,7 +70,7 @@ const server = http.createServer((req, res) => {
     const headers = { "Content-Type": contentType };
     if (ext === ".jpg" || ext === ".jpeg" || ext === ".png" || ext === ".webp" || ext === ".gif") {
       headers["Cache-Control"] = "public, max-age=86400";
-    } else if (ext === ".html" || ext === ".css" || ext === ".js") {
+    } else if (ext === ".html" || ext === ".css" || ext === ".js" || ext === ".rtf") {
       headers["Cache-Control"] = "no-cache";
     }
     res.writeHead(200, headers);
