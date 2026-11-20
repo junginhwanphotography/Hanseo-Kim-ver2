@@ -25,15 +25,14 @@ describe("HTTP 서버 기본 동작", () => {
     expect(Array.isArray(response.body)).toBe(true);
   });
 
-  it("사진 파일은 collections 폴더에서 제공한다", async () => {
-    const response = await request(server).get(
+  it("이전 photos 경로와 contact 파일은 제공하지 않는다", async () => {
+    const collections = await request(server).get(
       "/collections/paris%20to%20rome/images.json"
     );
+    const contact = await request(server).get("/contact.rtf");
 
-    expect(response.status).toBe(200);
-    expect(response.headers["content-type"]).toContain("application/json");
-    expect(Array.isArray(response.body.images)).toBe(true);
-    expect(response.body.images.length).toBeGreaterThan(0);
+    expect(collections.status).toBe(404);
+    expect(contact.status).toBe(404);
   });
 
   it("세 메뉴 목록과 사진 파일을 따로 제공한다", async () => {
@@ -48,6 +47,7 @@ describe("HTTP 서버 기본 동작", () => {
       "Mt.Fuji to Tokyo with BAHNO 1",
       "shizuoka",
       "okinawa",
+      "WALL",
       "통신보안",
     ]);
     expect(response.body.recent[0].images[0]).toMatch(/^recent-pictures\//);

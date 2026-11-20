@@ -4,7 +4,7 @@ const path = require("path");
 
 const PORT = process.env.PORT || 3000;
 const { buildCatalog } = require("./catalog");
-const { WEB, COLLECTIONS_DIR, CONTACT_RTF, CONTACT_TXT, RECENT_DIR, BOOKS_DIR, INFO_DIR } = require("./paths");
+const { WEB, RECENT_DIR, BOOKS_DIR, INFO_DIR } = require("./paths");
 
 const CONTENT_ROOTS = {
   "recent-pictures": RECENT_DIR,
@@ -52,10 +52,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   let filePath;
-  if (safePath === "contact.rtf") filePath = CONTACT_RTF;
-  else if (safePath === "contact.txt") filePath = CONTACT_TXT;
-  else if (parts[0] === "collections") filePath = path.join(COLLECTIONS_DIR, ...parts.slice(1));
-  else if (CONTENT_ROOTS[parts[0]] && CONTENT_EXT.has(path.extname(safePath).toLowerCase())) {
+  if (CONTENT_ROOTS[parts[0]] && CONTENT_EXT.has(path.extname(safePath).toLowerCase())) {
     filePath = path.join(CONTENT_ROOTS[parts[0]], ...parts.slice(1));
   } else filePath = path.join(WEB, ...parts);
 

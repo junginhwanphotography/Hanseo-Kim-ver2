@@ -1,11 +1,11 @@
 /**
  * GitHub Pages에 올릴 공개 파일만 _site 로 모읍니다.
- * web 페이지는 사이트 루트로, collections 사진은 /collections 로 둡니다.
+ * web 페이지는 사이트 루트로, 섹션 폴더의 사진을 함께 둡니다.
  */
 
 const fs = require("fs");
 const path = require("path");
-const { WEB, COLLECTIONS_DIR, CONTACT_RTF, CONTACT_TXT, SITE_OUT, RECENT_DIR, BOOKS_DIR, INFO_DIR } = require("./paths");
+const { WEB, SITE_OUT, RECENT_DIR, BOOKS_DIR, INFO_DIR } = require("./paths");
 const { buildCatalog } = require("./catalog");
 const { buildGridThumbs } = require("./build-grid-thumbs");
 
@@ -16,12 +16,6 @@ async function preparePages() {
   fs.rmSync(dest, { recursive: true, force: true });
   fs.mkdirSync(dest, { recursive: true });
   fs.cpSync(WEB, dest, { recursive: true });
-  if (fs.existsSync(COLLECTIONS_DIR)) {
-    fs.cpSync(COLLECTIONS_DIR, path.join(dest, "collections"), { recursive: true });
-  }
-  for (const file of [CONTACT_RTF, CONTACT_TXT]) {
-    if (fs.existsSync(file)) fs.copyFileSync(file, path.join(dest, path.basename(file)));
-  }
   const sections = [
     [RECENT_DIR, "recent-pictures"],
     [BOOKS_DIR, "books-and-printed-work"],

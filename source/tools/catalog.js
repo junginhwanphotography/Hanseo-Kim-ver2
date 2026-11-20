@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { RECENT_DIR, BOOKS_DIR, INFO_DIR } = require("./paths");
+const { RECENT_DIR, BOOKS_DIR, INFO_DIR, WEB } = require("./paths");
 
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp"]);
 
@@ -45,7 +45,23 @@ function listImages(dir) {
     .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
 }
 
-function listProjects(dir, urlPrefix) {
+function readCreatedIndex() {
+  try {
+    const list = JSON.parse(fs.readFileSync(path.join(WEB, "collections.json"), "utf8"));
+    const index = new Map();
+    if (!Array.isArray(list)) return index;
+    list.forEach((item) => {
+      if (!item || !item.id || !item.createdAt) return;
+      const time = Date.parse(item.createdAt);
+      if (!Number.isNaN(time)) index.set(item.id, time);
+    });
+    return index;
+  } catch (error) {
+    return new Map();
+  }
+}
+
+function listProjects(dir, urlPrefix, createdIndex) {
   if (!fs.existsSync(dir)) return [];
   return fs
     .readdirSync(dir, { withFileTypes: true })
@@ -54,7 +70,8 @@ function listProjects(dir, urlPrefix) {
       const folder = path.join(dir, entry.name);
       const meta = readProjectText(folder);
       const stat = fs.statSync(folder);
-      const created = (meta && meta.created) || stat.birthtimeMs || stat.mtimeMs || 0;
+      const stored = createdIndex && createdIndex.get(entry.name);
+      const created = stored || (meta && meta.created) || stat.birthtimeMs || 0;
       const images = listImages(folder).map(
         (name) => `${urlPrefix}/${encodeURIComponent(entry.name)}/${encodeURIComponent(name)}`
       );
@@ -92,8 +109,9 @@ function readInfo() {
 }
 
 function buildCatalog() {
+  const createdIndex = readCreatedIndex();
   return {
-    recent: listProjects(RECENT_DIR, "recent-pictures"),
+    recent: listProjects(RECENT_DIR, "recent-pictures", createdIndex),
     books: listProjects(BOOKS_DIR, "books-and-printed-work"),
     info: readInfo(),
   };

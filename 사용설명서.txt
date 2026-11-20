@@ -174,14 +174,14 @@
 ■ 폴더 구조와 자동 반영 내용
 ================================================================================
 
-  • photos/  사진 폴더
-  • contact.rtf  프로젝트 폴더의 Contact 글. 텍스트 편집기에서 저장하면 사이트에 반영됩니다.
-    각 컬렉션은 폴더 하나씩입니다.
+  • Recent Pictures/  최근 사진. 컬렉션은 폴더 하나씩입니다.
+  • Books and Printed Work/  책과 인쇄물
+  • Info/info.txt  Info 화면 글
   • 동기화/  더블클릭 실행 파일
   • source/  페이지, 서버, 동기화 프로그램. 평소에는 열지 않습니다.
     - source/web/  공개 페이지 (HTML, CSS, sitemap, collections.json)
     - source/tools/  동기화·서버·배포 스크립트
-    - photos에 새 폴더를 만들면 동기화 때 collections.json, images.json, sitemap.xml 이 갱신됩니다.
+    - Recent Pictures에 새 폴더를 만들면 동기화 때 collections.json, images.json, sitemap.xml 이 갱신됩니다.
     - source/web 에 HTML 페이지를 추가하면 sitemap.xml 에 함께 들어갑니다.
       (index.html, collection.html, wall.html 제외)
     - 폴더 안 사진 추가/삭제 → 해당 컬렉션의 images.json 만 갱신
@@ -204,7 +204,7 @@
 
   • 기존 WALL 폴더를 쓰던 경우 (한 번만)
     터미널에서 실행:  node source/tools/migrate-wall-to-collections.js
-    → 루트의 WALL 안 사진이 photos/_wall 로 복사됩니다.
+    → 루트의 WALL 안 사진이 Recent Pictures/_wall 로 복사됩니다.
     → 이어서 동기화(동기화/동기화-및-로컬서버.bat 또는 npm run serve)를 실행하세요.
     → 원하는 경우 루트의 WALL 폴더를 수동으로 삭제하세요.
 

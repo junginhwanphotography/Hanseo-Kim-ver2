@@ -11,6 +11,10 @@
   let renderToken = 0;
   let active = null;
   let cover = false;
+  let pressedLink = null;
+  let pressedAt = 0;
+
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
   function parseHash() {
     let hash = "";
@@ -80,6 +84,7 @@
     const token = ++renderToken;
     const route = parseHash();
     const inside = route.name !== "intro";
+    document.documentElement.classList.toggle("is-inside", inside);
     if (cover) hideBoard();
     document.documentElement.classList.remove("enter-now");
     intro.classList.toggle("is-leaving", inside);
@@ -113,6 +118,7 @@
       return;
     }
     if (token !== renderToken) return;
+    window.scrollTo(0, 0);
     site.scrollTop = 0;
     const sectionTitle = titles[route.name];
     if (route.name === "info") {
@@ -132,6 +138,34 @@
     setActive(section.list(view, projects));
   }
 
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      pressedLink = event.target.closest("a.recent-row, a.book-thumb, a.book-title");
+      pressedAt = pressedLink ? Date.now() : 0;
+    },
+    true
+  );
+  document.addEventListener(
+    "click",
+    (event) => {
+      const link = event.target.closest("a.recent-row, a.book-thumb, a.book-title");
+      if (!link) return;
+      if (event.detail === 0) return;
+      const pressed = pressedLink;
+      const fresh = pressed && pressed.isConnected && Date.now() - pressedAt < 1500;
+      pressedLink = null;
+      if (!fresh) {
+        event.preventDefault();
+        return;
+      }
+      if (pressed !== link) {
+        event.preventDefault();
+        location.assign(pressed.href);
+      }
+    },
+    true
+  );
   document.querySelector('[data-nav="intro"]').addEventListener("click", showBoard);
   document.getElementById("enter").addEventListener("click", (event) => {
     if (!cover) return;
