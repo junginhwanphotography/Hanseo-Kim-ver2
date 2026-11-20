@@ -79,6 +79,7 @@ html.is-inside .site {
 
 @media (max-width: 720px) {
   .site-nav {
+    position: static;
     padding: 36px 20px 8px;
   }
 
