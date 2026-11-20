@@ -108,6 +108,26 @@ async function getCollectionCreatedMs() {
   return map;
 }
 
+function canon(id) {
+  return String(id).normalize("NFC");
+}
+
+function entryForFolder(byId, folderName, renameFrom) {
+  if (byId.has(folderName)) return byId.get(folderName);
+  const key = canon(folderName);
+  for (const entry of byId.values()) {
+    if (entry && canon(entry.id) === key) return entry;
+  }
+  const oldId = renameFrom && renameFrom.get(folderName);
+  if (!oldId) return null;
+  if (byId.has(oldId)) return byId.get(oldId);
+  const oldKey = canon(oldId);
+  for (const entry of byId.values()) {
+    if (entry && canon(entry.id) === oldKey) return entry;
+  }
+  return null;
+}
+
 function detectRenames(oldIds, newIds) {
   const removed = oldIds.filter((id) => !newIds.includes(id));
   const added = newIds.filter((id) => !oldIds.includes(id));
@@ -234,7 +254,6 @@ async function runSync() {
   let changed = false;
 
   const collectionDirs = await getCollectionDirs();
-  const createdMsById = await getCollectionCreatedMs();
   let collections = await loadCollectionsJson();
   const byId = new Map(collections.map((c) => [c.id, c]));
   const renameFrom = detectRenames(
@@ -242,7 +261,8 @@ async function runSync() {
     collectionDirs
   );
 
-  const kept = collections.filter((c) => collectionDirs.includes(c.id));
+  const folderKeys = new Set(collectionDirs.map((id) => canon(id)));
+  const kept = collections.filter((c) => folderKeys.has(canon(c.id)));
   if (kept.length !== collections.length) {
     collections = kept;
     byId.clear();
@@ -253,16 +273,16 @@ async function runSync() {
 
   const newIds = new Set();
   for (const id of collectionDirs) {
-    if (byId.has(id)) continue;
+    const existing = entryForFolder(byId, id, renameFrom);
+    if (existing && existing.createdAt) continue;
     const oldId = renameFrom.get(id);
-    const oldEntry = oldId ? byId.get(oldId) : null;
     newIds.add(id);
     byId.set(id, {
       id,
       name: id,
       path: `collection.html?collection=${encodeURIComponent(id)}`,
       photoOrder: "asc",
-      createdAt: oldEntry && oldEntry.createdAt,
+      createdAt: (existing && existing.createdAt) || new Date().toISOString(),
     });
     changed = true;
     if (oldId) {
@@ -272,18 +292,15 @@ async function runSync() {
     }
   }
 
-  // 사진 순서는 폴더 생성일이 최근인 쪽이 위. 수정일은 쓰지 않는다.
-  // 한 번 기록한 createdAt은 이름 변경·CI checkout에도 유지한다.
+  // 한 번 기록한 createdAt만 순서를 정한다. 폴더 생성일·수정일·배포 시각은 쓰지 않는다.
   const ordered = collectionDirs
     .map((id) => {
-      const c = byId.get(id);
-      const inherited = c && c.createdAt;
-      const createdAt =
-        inherited || new Date(createdMsById.get(id) || Date.now()).toISOString();
+      const c = entryForFolder(byId, id, renameFrom);
+      const createdAt = (c && c.createdAt) || new Date().toISOString();
       return {
         ...c,
         id,
-        name: id,
+        name: (c && c.name) || id,
         path: `collection.html?collection=${encodeURIComponent(id)}`,
         photoOrder: photoOrderForCollection(c, newIds.has(id) && !renameFrom.has(id)),
         createdAt,
