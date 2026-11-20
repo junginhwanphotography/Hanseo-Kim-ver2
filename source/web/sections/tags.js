@@ -179,35 +179,76 @@
     return best;
   }
 
-  function scoreTag(letters, tag, canvas) {
-    if (!tag) return 0;
-    if (letters && letters.indexOf(tag) !== -1) return 1;
-    if (!letters || letters.length < tag.length) return 0;
-    const text = windowScore(letters, tag);
-    if (!canvas) return text;
-    const image = imageScore(canvas, tag);
-    return Math.max(text, text * 0.5 + image * 0.5);
+  function strokesNeeded(tag) {
+    const marks = (String(tag).match(/x/g) || []).length;
+    return tag.length + marks;
+  }
+
+  function textScoreForTag(texts, tag) {
+    let best = 0;
+    (texts || []).forEach((text) => {
+      const letters = lettersOf(text);
+      if (letters.indexOf(tag) !== -1) best = 1;
+      else best = Math.max(best, windowScore(letters, tag));
+    });
+    return best;
+  }
+
+  function imageScoreForTag(canvases, tag) {
+    let best = 0;
+    (canvases || []).forEach((canvas) => {
+      best = Math.max(best, imageScore(canvas, tag));
+    });
+    return best;
+  }
+
+  function scoreTagClosed(tag, texts, canvases) {
+    const text = textScoreForTag(texts, tag);
+    const image = imageScoreForTag(canvases, tag);
+    if (text >= 1) return Math.max(0.96, 0.55 * text + 0.45 * image);
+    if (!canvases || !canvases.length) return text;
+    return Math.max(text, 0.4 * text + 0.6 * image);
+  }
+
+  function pickTag(options) {
+    const opts = options || {};
+    const known = [...new Set((opts.tags || []).map((tag) => String(tag).toLowerCase()).filter(Boolean))];
+    const texts = opts.texts || (opts.text != null ? [opts.text] : []);
+    const canvases = opts.canvases || (opts.canvas ? [opts.canvas] : []);
+    const settle = !!opts.settle;
+    const strokeCount = opts.strokeCount == null ? 99 : Number(opts.strokeCount);
+    if (!known.length) return "";
+
+    const ranked = known
+      .map((tag) => {
+        if (strokeCount < strokesNeeded(tag)) return { tag, score: 0 };
+        return { tag, score: scoreTagClosed(tag, texts, canvases) };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || b.tag.length - a.tag.length);
+
+    const best = ranked[0];
+    const second = ranked[1];
+    if (!best) return "";
+    if (best.score < (settle ? 0.52 : 0.78)) return "";
+    if (second && best.score - second.score < 0.04 && best.score < 0.88) return "";
+    return best.tag;
   }
 
   function matchWord(text, tags, canvas, settle) {
-    const known = [...new Set((tags || []).map((tag) => String(tag).toLowerCase()).filter(Boolean))];
-    const letters = lettersOf(text);
-    if (!known.length) return "";
-    let exact = "";
-    known.forEach((tag) => {
-      if (letters.indexOf(tag) !== -1 && tag.length > exact.length) exact = tag;
+    return pickTag({
+      text,
+      texts: [text],
+      canvas,
+      canvases: canvas ? [canvas] : [],
+      tags,
+      settle,
+      strokeCount: 99,
     });
-    if (exact) return exact;
-    const ranked = known
-      .map((tag) => ({ tag, score: scoreTag(letters, tag, canvas) }))
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score || b.tag.length - a.tag.length);
-    const best = ranked[0];
-    const second = ranked[1];
-    if (!best || best.score < 0.54) return "";
-    if (!settle && best.score < 0.72) return "";
-    if (second && best.score - second.score < 0.045 && best.score < 0.8) return "";
-    return best.tag;
+  }
+
+  function scoreTag(letters, tag, canvas) {
+    return scoreTagClosed(tag, [letters], canvas ? [canvas] : []);
   }
 
   function commandTag(text, tags, settle) {
@@ -223,5 +264,13 @@
     return hit;
   }
 
-  window.HanseoTags = { tagFromSrc, matchWord, commandTag, scoreTag, warmTags };
+  window.HanseoTags = {
+    tagFromSrc,
+    matchWord,
+    commandTag,
+    scoreTag,
+    warmTags,
+    pickTag,
+    strokesNeeded,
+  };
 })();

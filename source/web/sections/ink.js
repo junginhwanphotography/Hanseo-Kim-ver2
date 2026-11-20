@@ -1,10 +1,12 @@
 (function () {
-  const PAUSE_MS = 700;
-  const CHECK_MS = 160;
+  const PAUSE_MS = 750;
+  const CHECK_MS = 180;
+  const CONFIRM_MS = 420;
   const SESSION_GAP_MS = 4000;
-  const phoneQuery = typeof window !== "undefined" && window.matchMedia
-    ? window.matchMedia("(max-width: 720px), (pointer: coarse)")
-    : { matches: false };
+  const phoneQuery =
+    typeof window !== "undefined" && window.matchMedia
+      ? window.matchMedia("(max-width: 720px), (pointer: coarse)")
+      : { matches: false };
   let timer = 0;
   let token = 0;
   const submitted = new WeakSet();
@@ -77,7 +79,8 @@
     return out;
   }
 
-  function renderInk(strokes) {
+  function renderInk(strokes, options) {
+    const opts = options || {};
     const used = writingSession(strokes);
     if (!used.some((stroke) => !stroke.erase)) return null;
     const phone = phoneQuery.matches;
@@ -100,7 +103,12 @@
     const span = Math.max(maxX - minX, maxY - minY);
     const letter = Math.max(24, Math.min(maxX - minX, maxY - minY));
     if (!Number.isFinite(span) || span < 24) return null;
-    const thickness = Math.max(phone ? 11 : 8, Math.min(letter * (phone ? 0.14 : 0.11), phone ? 32 : 28));
+    const thickScale = opts.thicknessScale || 1;
+    const targetScale = opts.targetScale || 1;
+    const thickness = Math.max(
+      (phone ? 11 : 8) * thickScale,
+      Math.min(letter * (phone ? 0.14 : 0.11) * thickScale, (phone ? 32 : 28) * thickScale)
+    );
     const pad = thickness * 2;
     const width = Math.ceil(maxX - minX + pad * 2);
     const height = Math.ceil(maxY - minY + pad * 2);
@@ -143,7 +151,7 @@
     const cropW = right - left + 1;
     const cropH = bottom - top + 1;
     const margin = Math.round(Math.max(18, cropH * 0.28));
-    const target = phoneQuery.matches ? 210 : 170;
+    const target = (phoneQuery.matches ? 210 : 170) * targetScale;
     const scale = Math.min(phoneQuery.matches ? 3.4 : 3, target / cropH);
     const out = document.createElement("canvas");
     out.width = Math.max(1, Math.round((cropW + margin * 2) * scale));
@@ -174,24 +182,40 @@
     return out;
   }
 
+  function renderVariants(strokes) {
+    return [
+      renderInk(strokes, { thicknessScale: 1, targetScale: 1 }),
+      renderInk(strokes, { thicknessScale: 1.35, targetScale: 1 }),
+      renderInk(strokes, { thicknessScale: 0.78, targetScale: 1.18 }),
+    ].filter(Boolean);
+  }
+
   async function readStrokes(strokes, alive, settle) {
-    const canvas = renderInk(strokes);
-    if (!canvas) return "";
+    const canvases = renderVariants(strokes);
+    if (!canvases.length) return "";
     if (alive && !alive()) return "";
     await window.HanseoHand.prepare();
     if (alive && !alive()) return "";
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    if (alive && !alive()) return "";
-    const read = window.HanseoHand.readCanvasAsync
-      ? await window.HanseoHand.readCanvasAsync(canvas, alive)
-      : window.HanseoHand.readCanvas(canvas);
-    if (!read || (alive && !alive())) return "";
+    const texts = [];
+    for (let i = 0; i < canvases.length; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (alive && !alive()) return "";
+      const read = window.HanseoHand.readCanvasAsync
+        ? await window.HanseoHand.readCanvasAsync(canvases[i], alive)
+        : window.HanseoHand.readCanvas(canvases[i]);
+      if (!read || (alive && !alive())) return "";
+      if (read.text) texts.push(read.text);
+    }
     const tags = await loadTags();
     if (alive && !alive()) return "";
-    const quick = window.HanseoTags.matchWord(read.text, tags, null, settle);
-    if (quick) return quick;
-    if (!settle) return "";
-    return window.HanseoTags.matchWord(read.text, tags, canvas, settle);
+    const session = writingSession(strokes).filter((stroke) => !stroke.erase);
+    return window.HanseoTags.pickTag({
+      texts,
+      canvases: settle ? canvases : canvases.slice(0, 1),
+      tags,
+      settle,
+      strokeCount: session.length,
+    });
   }
 
   function cancel() {
@@ -211,6 +235,15 @@
     return !!intro && !intro.classList.contains("is-leaving");
   }
 
+  function publish(tag, snapshot, current) {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (current !== token || !boardOpen()) return;
+      snapshot.forEach((stroke) => submitted.add(stroke));
+      window.dispatchEvent(new CustomEvent("hanseo-ink", { detail: { tag } }));
+    }, CONFIRM_MS);
+  }
+
   function schedule(strokes) {
     const snapshot = (strokes || []).filter((stroke) => stroke && !submitted.has(stroke));
     const current = ++token;
@@ -223,8 +256,7 @@
         const tag = await readStrokes(snapshot, () => current === token, settle);
         if (current !== token || !boardOpen()) return;
         if (tag) {
-          snapshot.forEach((stroke) => submitted.add(stroke));
-          window.dispatchEvent(new CustomEvent("hanseo-ink", { detail: { tag } }));
+          publish(tag, snapshot, current);
           return;
         }
         if (settle) return;

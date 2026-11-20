@@ -44,6 +44,35 @@ describe("사진 태그", () => {
     expect(tags.matchWord("moon", ["sun", "moon"])).toBe("moon");
   });
 
+  it("x가 있는 태그는 획이 足り면 고르고 한 획 모자라면 고르지 않는다", () => {
+    expect(tags.strokesNeeded("sex")).toBe(4);
+    expect(tags.strokesNeeded("sun")).toBe(3);
+    expect(
+      tags.pickTag({
+        texts: ["sex"],
+        tags: ["sun", "sex"],
+        settle: true,
+        strokeCount: 3,
+      })
+    ).toBe("");
+    expect(
+      tags.pickTag({
+        texts: ["sex"],
+        tags: ["sun", "sex"],
+        settle: true,
+        strokeCount: 4,
+      })
+    ).toBe("sex");
+    expect(
+      tags.pickTag({
+        texts: ["gum"],
+        tags: ["sun", "sex"],
+        settle: true,
+        strokeCount: 3,
+      })
+    ).toBe("sun");
+  });
+
   it("키보드로 친 단어가 태그와 같으면 고른다", () => {
     expect(tags.commandTag("sun", ["sun", "sex"])).toBe("sun");
     expect(tags.commandTag("SUN", ["sun"])).toBe("sun");
