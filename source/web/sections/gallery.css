@@ -257,3 +257,39 @@ html.photo-open .site-nav {
     cursor: default;
   }
 }
+
+@media (prefers-color-scheme: dark) {
+  .book-arrow {
+    color: #00ff41;
+  }
+
+  .book-dots button {
+    background: #00ff41;
+  }
+
+  .project-label {
+    color: #00ff41;
+  }
+
+  .mosaic-item {
+    background: #111111;
+    cursor: url("../cursor-dark.png?v=2") 0 0, auto;
+  }
+
+  .photo-stage {
+    background: #000000;
+  }
+
+  .photo-zone,
+  .photo-zone:disabled {
+    cursor: url("../cursor-dark.png?v=2") 0 0, auto;
+  }
+
+  .photo-zone-prev {
+    cursor: url("../cursor-left-dark.png?v=2") 4 8, w-resize;
+  }
+
+  .photo-zone-next {
+    cursor: url("../cursor-right-dark.png?v=2") 11 8, e-resize;
+  }
+}

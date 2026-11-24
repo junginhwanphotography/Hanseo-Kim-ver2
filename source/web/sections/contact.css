@@ -1,3 +1,7 @@
+html.is-contact .site-view {
+  padding-right: min(60vw, 760px);
+}
+
 .info {
   width: min(920px, calc(100% - 64px));
   margin: 58px auto 88px;
@@ -46,6 +50,11 @@
 }
 
 @media (max-width: 720px) {
+  html.is-contact .site-view {
+    padding-right: 0;
+    padding-bottom: min(48vh, 420px);
+  }
+
   .info,
   .info-rich {
     width: calc(100% - 36px);
@@ -55,5 +64,11 @@
   .info {
     grid-template-columns: 1fr;
     row-gap: 28px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .info-note {
+    color: #1f9a45;
   }
 }

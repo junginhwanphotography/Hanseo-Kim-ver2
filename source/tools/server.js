@@ -4,10 +4,19 @@ const path = require("path");
 
 const PORT = process.env.PORT || 3000;
 const { buildCatalog } = require("./catalog");
-const { WEB, RECENT_DIR, BOOKS_DIR, CONTACT_DIR, COLLECTIONS_URL } = require("./paths");
+const {
+  WEB,
+  RECENT_WHITE_DIR,
+  RECENT_BLACK_DIR,
+  BOOKS_DIR,
+  CONTACT_DIR,
+  COLLECTIONS_URL_WHITE,
+  COLLECTIONS_URL_BLACK,
+} = require("./paths");
 
 const CONTENT_ROOTS = {
-  [COLLECTIONS_URL]: RECENT_DIR,
+  [COLLECTIONS_URL_WHITE]: RECENT_WHITE_DIR,
+  [COLLECTIONS_URL_BLACK]: RECENT_BLACK_DIR,
   "books-and-printed-work": BOOKS_DIR,
   contact: CONTACT_DIR,
 };

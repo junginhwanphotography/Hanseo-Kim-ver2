@@ -50,16 +50,20 @@ describe("HTTP 서버 기본 동작", () => {
       "WALL",
       "통신보안",
     ]);
-    expect(response.body.recent[0].images[0]).toMatch(/^photographs\//);
+    expect(response.body.recent[0].images[0]).toMatch(/^photographs_(white|black)\//);
+    expect(response.body.recent[0].imagesWhite.length).toBeGreaterThan(0);
+    expect(response.body.recent[0].imagesBlack.length).toBeGreaterThan(0);
     const tagged = [];
     response.body.recent.forEach((item) => {
       item.images.forEach((src) => {
         const name = decodeURIComponent(src.split("/").pop());
-        if (/_[A-Za-z]+\./.test(name)) tagged.push(name);
+        if (/_(sun|sex|sea|lux)\./i.test(name)) tagged.push(name);
       });
     });
     expect(tagged).toEqual([
+      "0601-12_lux.jpg",
       "0601-13_sex.jpg",
+      "0602-05_lux.jpg",
       "3_sun.jpg",
       "10_sun.jpg",
       "11_sun.jpg",

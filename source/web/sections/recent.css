@@ -98,3 +98,18 @@
     grid-column: 2;
   }
 }
+
+@media (prefers-color-scheme: dark) {
+  .recent-row {
+    color: #00ff41;
+  }
+
+  .recent-year,
+  .recent-text {
+    color: #1f9a45;
+  }
+
+  .recent-row:hover .recent-title {
+    color: #66ff99;
+  }
+}

@@ -8,7 +8,19 @@ const path = require("path");
 const { execSync } = require("child_process");
 const { generateSitemap } = require("./generate-sitemap.js");
 
-const { PROJECT: ROOT, WEB, COLLECTIONS_DIR, COLLECTIONS_URL } = require("./paths");
+const {
+  PROJECT: ROOT,
+  WEB,
+  RECENT_WHITE_DIR,
+  RECENT_BLACK_DIR,
+  COLLECTIONS_URL_WHITE,
+  COLLECTIONS_URL_BLACK,
+} = require("./paths");
+
+const THEME_ROOTS = [
+  { dir: RECENT_WHITE_DIR, url: COLLECTIONS_URL_WHITE },
+  { dir: RECENT_BLACK_DIR, url: COLLECTIONS_URL_BLACK },
+];
 const {
   optimizeCollectionPhotos,
   summarize,
@@ -67,13 +79,16 @@ async function normalizeBackgroundFilename(dir) {
 }
 
 async function getCollectionDirs() {
-  const dir = COLLECTIONS_DIR;
-  try {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    return entries.filter((e) => e.isDirectory()).map((e) => e.name);
-  } catch {
-    return [];
+  const names = new Set();
+  for (const root of THEME_ROOTS) {
+    try {
+      const entries = await fs.readdir(root.dir, { withFileTypes: true });
+      entries.filter((e) => e.isDirectory() && !e.name.startsWith(".")).forEach((e) => names.add(e.name));
+    } catch {
+      // theme folder may be missing
+    }
   }
+  return [...names];
 }
 
 function createdMsFromStat(stat) {
@@ -90,20 +105,22 @@ function createdMsFromIso(value) {
 }
 
 async function getCollectionCreatedMs() {
-  const dir = COLLECTIONS_DIR;
   const map = new Map();
-  try {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    await Promise.all(
-      entries
-        .filter((e) => e.isDirectory())
-        .map(async (e) => {
-          const stat = await fs.stat(path.join(dir, e.name));
-          map.set(e.name, createdMsFromStat(stat));
-        })
-    );
-  } catch {
-    // collections 폴더가 없으면 빈 맵
+  for (const root of THEME_ROOTS) {
+    try {
+      const entries = await fs.readdir(root.dir, { withFileTypes: true });
+      await Promise.all(
+        entries
+          .filter((e) => e.isDirectory())
+          .map(async (e) => {
+            const stat = await fs.stat(path.join(root.dir, e.name));
+            const ms = createdMsFromStat(stat);
+            if (!map.has(e.name) || ms < map.get(e.name)) map.set(e.name, ms);
+          })
+      );
+    } catch {
+      // theme folder may be missing
+    }
   }
   return map;
 }
@@ -139,47 +156,59 @@ function detectRenames(oldIds, newIds) {
 }
 
 async function getCollectionImageList(collectionId) {
-  const dir = path.join(COLLECTIONS_DIR, collectionId);
-  try {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    return entries
-      .filter((e) => e.isFile() && e.name !== "images.json" && isImage(e.name) && !isGalleryExcludedFile(e.name))
-      .map((e) => e.name)
-      .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
-  } catch {
-    return [];
+  const names = new Set();
+  for (const root of THEME_ROOTS) {
+    const dir = path.join(root.dir, collectionId);
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      entries
+        .filter((e) => e.isFile() && e.name !== "images.json" && isImage(e.name) && !isGalleryExcludedFile(e.name))
+        .forEach((e) => names.add(e.name));
+    } catch {
+      // missing theme copy
+    }
   }
+  return [...names].sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
 }
 
 async function getCollectionJsonList(collectionId) {
-  const file = path.join(COLLECTIONS_DIR, collectionId, "images.json");
-  try {
-    const raw = await fs.readFile(file, "utf8");
-    const data = JSON.parse(raw);
-    const list = Array.isArray(data) ? data : (data.images || []);
-    return (list || [])
-      .filter((item) => item && item.src)
-      .map((item) => path.basename(item.src))
-      .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
-  } catch {
-    return null;
+  const names = new Set();
+  let saw = false;
+  for (const root of THEME_ROOTS) {
+    const file = path.join(root.dir, collectionId, "images.json");
+    try {
+      const raw = await fs.readFile(file, "utf8");
+      const data = JSON.parse(raw);
+      const list = Array.isArray(data) ? data : data.images || [];
+      saw = true;
+      (list || [])
+        .filter((item) => item && item.src)
+        .forEach((item) => names.add(path.basename(item.src)));
+    } catch {
+      // missing theme copy
+    }
   }
+  if (!saw) return null;
+  return [...names].sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
 }
 
 /** images.json 안의 src가 모두 현재 폴더명(id)과 일치하는지 검사. 이름 변경 시 false */
 async function imagesJsonPathsMatchId(collectionId) {
-  const file = path.join(COLLECTIONS_DIR, collectionId, "images.json");
-  try {
-    const raw = await fs.readFile(file, "utf8");
-    const data = JSON.parse(raw);
-    const list = Array.isArray(data) ? data : (data.images || []);
-    const srcList = (list || []).filter((item) => item && item.src).map((item) => item.src);
-    if (srcList.length === 0) return true;
-    const prefix = `${COLLECTIONS_URL}/${collectionId}/`;
-    return srcList.every((src) => src.startsWith(prefix));
-  } catch {
-    return false;
+  for (const root of THEME_ROOTS) {
+    const file = path.join(root.dir, collectionId, "images.json");
+    try {
+      const raw = await fs.readFile(file, "utf8");
+      const data = JSON.parse(raw);
+      const list = Array.isArray(data) ? data : data.images || [];
+      const srcList = (list || []).filter((item) => item && item.src).map((item) => item.src);
+      if (srcList.length === 0) continue;
+      const prefix = `${root.url}/${collectionId}/`;
+      if (!srcList.every((src) => src.startsWith(prefix))) return false;
+    } catch {
+      // missing theme copy
+    }
   }
+  return true;
 }
 
 function photoOrderForCollection() {
@@ -218,8 +247,9 @@ function run(cmd, cwd = ROOT) {
 }
 
 /** 컬렉션 폴더의 사진 목록을 읽어 images.json 생성/갱신 (프로세스 분리 없이 직접 실행) */
-async function generateCollectionImagesJson(collectionId, photoOrder = "asc") {
-  const dir = path.join(COLLECTIONS_DIR, collectionId);
+async function generateCollectionImagesJson(collectionId, photoOrder = "asc", themeRoot) {
+  const root = themeRoot || THEME_ROOTS[0];
+  const dir = path.join(root.dir, collectionId);
   const outFile = path.join(dir, "images.json");
   try {
     await fs.mkdir(dir, { recursive: true });
@@ -233,13 +263,11 @@ async function generateCollectionImagesJson(collectionId, photoOrder = "asc") {
     photoOrder
   );
   const images = files.map((file) => ({
-    src: `${COLLECTIONS_URL}/${collectionId}/${file}`,
+    src: `${root.url}/${collectionId}/${file}`,
     alt: path.parse(file).name,
   }));
   const data = {
-    background: backgroundFile
-      ? `${COLLECTIONS_URL}/${collectionId}/${backgroundFile}`
-      : null,
+    background: backgroundFile ? `${root.url}/${collectionId}/${backgroundFile}` : null,
     images,
   };
   await fs.writeFile(outFile, JSON.stringify(data, null, 2), "utf8");
@@ -317,21 +345,26 @@ async function runSync() {
   // 모든 컬렉션의 images.json을 매번 재생성 (사진 추가/삭제/변경 반영)
   const optCache = await loadOptCache();
   for (const id of collectionDirs) {
-    try {
-      const entry = byId.get(id);
-      const photoOrder = photoOrderForCollection(entry, newIds.has(id));
-      const compressed = await optimizeCollectionPhotos(
-        path.join(COLLECTIONS_DIR, id),
-        optCache
-      );
-      summarize(id, compressed);
-      if (compressed.changed) changed = true;
-      const { count, background } = await generateCollectionImagesJson(id, photoOrder);
-      const bgNote = background ? `, 배경 ${background}` : "";
-      console.log(`🖼 컬렉션 "${id}" → images.json 갱신 (${count}개 이미지${bgNote})`);
-      changed = true;
-    } catch (err) {
-      console.error(`❌ 컬렉션 "${id}" images.json 생성 실패:`, err.message);
+    const entry = byId.get(id);
+    const photoOrder = photoOrderForCollection(entry, newIds.has(id));
+    for (const root of THEME_ROOTS) {
+      const themeDir = path.join(root.dir, id);
+      try {
+        await fs.access(themeDir);
+      } catch {
+        continue;
+      }
+      try {
+        const compressed = await optimizeCollectionPhotos(themeDir, optCache);
+        summarize(`${id}/${root.url}`, compressed);
+        if (compressed.changed) changed = true;
+        const { count, background } = await generateCollectionImagesJson(id, photoOrder, root);
+        const bgNote = background ? `, 배경 ${background}` : "";
+        console.log(`🖼 컬렉션 "${id}" (${root.url}) → images.json 갱신 (${count}개 이미지${bgNote})`);
+        changed = true;
+      } catch (err) {
+        console.error(`❌ 컬렉션 "${id}" (${root.url}) images.json 생성 실패:`, err.message);
+      }
     }
   }
   await saveOptCache(optCache);

@@ -230,9 +230,7 @@
   }
 
   function boardOpen() {
-    if (document.documentElement.classList.contains("intro-cover")) return true;
-    const intro = document.getElementById("intro");
-    return !!intro && !intro.classList.contains("is-leaving");
+    return document.documentElement.classList.contains("is-contact");
   }
 
   function publish(tag, snapshot, current) {
@@ -276,5 +274,5 @@
   } catch (error) {
     hash = location.hash.replace(/^#/, "");
   }
-  if (!hash || hash === "intro") prepare();
+  if (hash === "contact" || hash === "info") prepare();
 })();

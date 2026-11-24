@@ -1,7 +1,7 @@
 (function () {
-  const intro = document.getElementById("intro");
   const site = document.getElementById("site");
   const view = document.getElementById("site-view");
+  const paintDesk = document.getElementById("paint-desk");
   const titles = {
     photographs: "photographs",
     books: "books and printed work",
@@ -10,7 +10,6 @@
   let catalogPromise = null;
   let renderToken = 0;
   let active = null;
-  let cover = false;
   let pressedLink = null;
   let pressedAt = 0;
   let photosOpen = false;
@@ -24,7 +23,7 @@
     } catch (error) {
       hash = location.hash.replace(/^#/, "");
     }
-    if (!hash || hash === "intro") return { name: "intro" };
+    if (!hash || hash === "intro") return { name: "photographs" };
     if (hash === "photographs" || hash === "recent") return { name: "photographs" };
     if (hash === "contact" || hash === "info") return { name: "contact" };
     if (hash === "books") return { name: "books" };
@@ -36,7 +35,7 @@
     if (hash.indexOf("recent/") === 0) return { name: "photographs", id: hash.slice("recent/".length) };
     if (hash.indexOf("books/") === 0) return { name: "books", id: hash.slice("books/".length) };
     if (/^photo\/\d+$/.test(hash)) return { name: "photographs" };
-    return { name: "intro" };
+    return { name: "photographs" };
   }
 
   function syncSide(projects, route) {
@@ -147,37 +146,17 @@
     { passive: true }
   );
 
-  function showBoard(event) {
-    if (event) event.preventDefault();
-    if (cover || parseHash().name === "intro") return;
-    cover = true;
-    document.documentElement.classList.add("board-on");
-    intro.classList.remove("is-away");
-    intro.style.transition = "";
-    document.documentElement.classList.add("intro-cover");
-    intro.removeAttribute("inert");
-    intro.setAttribute("aria-hidden", "false");
-    window.dispatchEvent(new Event("hanseo-seal"));
-    if (window.HanseoInk) {
+  function setPaintDesk(on) {
+    document.documentElement.classList.toggle("is-contact", on);
+    if (!paintDesk) return;
+    paintDesk.hidden = !on;
+    paintDesk.setAttribute("aria-hidden", on ? "false" : "true");
+    if (on) {
+      window.dispatchEvent(new Event("resize"));
+      if (window.HanseoInk) window.HanseoInk.prepare();
+    } else if (window.HanseoInk) {
       window.HanseoInk.cancel();
-      window.HanseoInk.prepare();
     }
-    site.setAttribute("inert", "");
-    site.setAttribute("aria-hidden", "true");
-    window.dispatchEvent(new Event("resize"));
-  }
-
-  function hideBoard() {
-    if (!cover) return;
-    cover = false;
-    document.documentElement.classList.remove("intro-cover");
-    document.documentElement.classList.remove("board-on");
-    intro.setAttribute("inert", "");
-    intro.setAttribute("aria-hidden", "true");
-    site.removeAttribute("inert");
-    site.setAttribute("aria-hidden", "false");
-    window.dispatchEvent(new Event("hanseo-seal"));
-    if (window.HanseoInk) window.HanseoInk.cancel();
   }
 
   function openTag(tag) {
@@ -188,10 +167,7 @@
     } catch (error) {
       hash = location.hash.replace(/^#/, "");
     }
-    if (hash === next) {
-      if (cover) hideBoard();
-      return;
-    }
+    if (hash === next) return;
     location.hash = next;
   }
 
@@ -200,37 +176,15 @@
     if (tag) openTag(tag);
   });
 
-  intro.addEventListener("transitionend", (event) => {
-    if (event.target !== intro || event.propertyName !== "transform") return;
-    if (cover || parseHash().name === "intro") return;
-    if (intro.classList.contains("is-leaving")) intro.classList.add("is-away");
-  });
-
   async function render() {
     const token = ++renderToken;
     const route = parseHash();
-    const inside = route.name !== "intro";
-    document.documentElement.classList.toggle("is-inside", inside);
-    document.documentElement.classList.toggle("board-on", !inside);
-    if (inside) listHold = true;
-    if (!inside) intro.classList.remove("is-away");
-    if (inside) {
-      holdTop();
-      window.setTimeout(() => {
-        if (!cover && parseHash().name !== "intro" && intro.classList.contains("is-leaving")) intro.classList.add("is-away");
-      }, 1200);
-    }
-    if (cover) hideBoard();
-    else if (inside) {
-      window.dispatchEvent(new Event("hanseo-seal"));
-      if (window.HanseoInk) window.HanseoInk.cancel();
-    }
-    document.documentElement.classList.remove("enter-now");
-    intro.classList.toggle("is-leaving", inside);
-    intro.toggleAttribute("inert", inside);
-    intro.setAttribute("aria-hidden", inside ? "true" : "false");
-    site.toggleAttribute("inert", !inside);
-    site.setAttribute("aria-hidden", inside ? "false" : "true");
+    document.documentElement.classList.add("is-inside");
+    listHold = true;
+    holdTop();
+    setPaintDesk(route.name === "contact");
+    site.removeAttribute("inert");
+    site.setAttribute("aria-hidden", "false");
     site.hidden = false;
     document.querySelectorAll(".side-menu [data-nav]").forEach((link) => {
       const current =
@@ -239,13 +193,6 @@
       if (current) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     });
-    if (!inside) {
-      setActive(null);
-      view.replaceChildren();
-      document.title = "Hanseo Kim";
-      window.dispatchEvent(new Event("resize"));
-      return;
-    }
     let catalog;
     try {
       catalog = await loadCatalog();
@@ -281,9 +228,19 @@
       return;
     }
     if (route.name === "photographs" && !route.id) {
+      // 메인만: 라이트=photographs_white, 다크=photographs_black. 컬렉션 페이지는 아래 merged images 사용.
+      const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const root = dark ? "photographs_black/" : "photographs_white/";
       const images = [];
       projects.forEach((project) => {
-        (project.images || []).forEach((src) => images.push(src));
+        const preferred = dark ? project.imagesBlack : project.imagesWhite;
+        const list =
+          preferred && preferred.length
+            ? preferred
+            : (project.images || []).filter((src) => String(src).indexOf(root) !== -1);
+        list.forEach((src) => {
+          if (String(src).indexOf(root) !== -1) images.push(src);
+        });
       });
       document.title = "Hanseo Kim";
       setActive(window.HanseoGallery.open(view, { title: "", images }, { layout: "mosaic", label: false }));
@@ -338,7 +295,6 @@
     },
     true
   );
-  document.querySelector('[data-nav="intro"]').addEventListener("click", showBoard);
   document.querySelector("[data-nav='photographs']").addEventListener("click", () => {
     const route = parseHash();
     if (route.name === "photographs" && !route.id && !route.tag) {
@@ -373,23 +329,14 @@
   window.addEventListener("scroll", lockPhone, { passive: true });
   lockPhone();
 
-  function enterSite(event) {
-    if (event) event.preventDefault();
-    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-    holdTop();
-    lockPhone();
-    if (cover) {
-      hideBoard();
-      return;
-    }
-    if (location.hash !== "#photographs") location.hash = "photographs";
-    else holdTop();
-  }
-
-  const enter = document.getElementById("enter");
-  enter.addEventListener("click", enterSite);
-  enter.addEventListener("touchstart", enterSite, { passive: false });
   window.addEventListener("hashchange", render);
+  const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+  const onColorScheme = () => {
+    const route = parseHash();
+    if (route.name === "photographs" && !route.id && !route.tag) render();
+  };
+  if (colorScheme.addEventListener) colorScheme.addEventListener("change", onColorScheme);
+  else if (colorScheme.addListener) colorScheme.addListener(onColorScheme);
   let typed = "";
   let typeTimer = 0;
   let lastLetter = "";
@@ -441,13 +388,9 @@
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       if (event.hanseoPhoto || document.documentElement.classList.contains("photo-open")) return;
-      if (cover) {
-        hideBoard();
-        return;
-      }
       const route = parseHash();
       if (route.id || route.tag) location.hash = route.name;
-      else if (route.name !== "intro") location.hash = "";
+      else if (route.name !== "photographs") location.hash = "photographs";
       return;
     }
     const letter = commandLetter(event);

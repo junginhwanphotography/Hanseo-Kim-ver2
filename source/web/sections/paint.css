@@ -1,0 +1,156 @@
+.paint-desk {
+  position: fixed;
+  top: 24px;
+  right: 28px;
+  z-index: 3;
+  display: none;
+  box-sizing: border-box;
+  width: min(58vw, 720px);
+  height: min(78vh, 820px);
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #161616;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html.is-contact .paint-desk {
+  display: block;
+}
+
+.paint-desk[hidden] {
+  display: none !important;
+}
+
+.paint-board {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.paint-desk.is-eraser .paint-board {
+  cursor: cell;
+}
+
+.paint {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.paint-colors,
+.paint-tools {
+  display: grid;
+  gap: 4px;
+}
+
+.paint-colors {
+  grid-template-columns: repeat(3, 20px);
+}
+
+.paint-tools {
+  grid-template-columns: 32px;
+}
+
+.paint-color,
+.paint-tool {
+  margin: 0;
+  padding: 0;
+  border: 1px solid #000000;
+  cursor: pointer;
+}
+
+.paint-color {
+  width: 20px;
+  height: 20px;
+}
+
+.paint-color.is-on,
+.paint-tool:focus-visible,
+.paint-color:focus-visible {
+  outline: 2px solid #000000;
+  outline-offset: 2px;
+}
+
+.paint-tool {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  color: #000000;
+}
+
+.paint-tool svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.paint-tool.is-on {
+  background: #000000;
+  color: #ffffff;
+}
+
+.paint-tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+html.is-drawing,
+html.is-drawing body {
+  touch-action: none;
+}
+
+@media (max-width: 720px) {
+  .paint-desk {
+    top: auto;
+    right: 18px;
+    bottom: 12px;
+    left: 18px;
+    width: auto;
+    height: min(42vh, 380px);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .paint-desk {
+    background: #000000;
+    border-color: #00ff41;
+  }
+
+  .paint-color,
+  .paint-tool {
+    border-color: #00ff41;
+  }
+
+  .paint-color.is-on,
+  .paint-tool:focus-visible,
+  .paint-color:focus-visible {
+    outline-color: #00ff41;
+  }
+
+  .paint-tool {
+    background: #000000;
+    color: #00ff41;
+  }
+
+  .paint-tool.is-on {
+    background: #00ff41;
+    color: #000000;
+  }
+
+  .paint-color,
+  .paint-tool:not(:disabled) {
+    cursor: url("../cursor-dark.png?v=2") 0 0, auto;
+  }
+}

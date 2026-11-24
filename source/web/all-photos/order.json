@@ -1,49 +1,29 @@
 {
-  "cols": 12,
-  "rows": 8,
+  "cols": 14,
+  "rows": 2,
   "tile": 180,
   "gap": 1,
-  "hash": "4b0891e9c84632780ef49e9a7128142d7a89a783",
+  "hash": "ec6a92a26f5ca6063bbc5eb93d52b81156901dcc",
   "images": [
     {
       "collectionId": "영월",
-      "file": "0601-07.jpg",
-      "src": "collections/영월/0601-07.jpg"
+      "file": "0601-07_abbaabrrl.jpg",
+      "src": "collections/영월/0601-07_abbaabrrl.jpg"
     },
     {
       "collectionId": "영월",
-      "file": "0601-12.jpg",
-      "src": "collections/영월/0601-12.jpg"
+      "file": "0601-12_lux.jpg",
+      "src": "collections/영월/0601-12_lux.jpg"
     },
     {
       "collectionId": "영월",
-      "file": "0601-13.jpg",
-      "src": "collections/영월/0601-13.jpg"
+      "file": "0601-13_sex.jpg",
+      "src": "collections/영월/0601-13_sex.jpg"
     },
     {
       "collectionId": "영월",
       "file": "0601-15.jpg",
       "src": "collections/영월/0601-15.jpg"
-    },
-    {
-      "collectionId": "영월",
-      "file": "0601-16.jpg",
-      "src": "collections/영월/0601-16.jpg"
-    },
-    {
-      "collectionId": "영월",
-      "file": "0602-03.jpg",
-      "src": "collections/영월/0602-03.jpg"
-    },
-    {
-      "collectionId": "영월",
-      "file": "0602-04.jpg",
-      "src": "collections/영월/0602-04.jpg"
-    },
-    {
-      "collectionId": "영월",
-      "file": "0602-05.jpg",
-      "src": "collections/영월/0602-05.jpg"
     },
     {
       "collectionId": "바닥을 기어다니며",
@@ -57,8 +37,8 @@
     },
     {
       "collectionId": "바닥을 기어다니며",
-      "file": "3.jpg",
-      "src": "collections/바닥을 기어다니며/3.jpg"
+      "file": "3_sun.jpg",
+      "src": "collections/바닥을 기어다니며/3_sun.jpg"
     },
     {
       "collectionId": "바닥을 기어다니며",
@@ -79,86 +59,6 @@
       "collectionId": "바닥을 기어다니며",
       "file": "7.jpg",
       "src": "collections/바닥을 기어다니며/7.jpg"
-    },
-    {
-      "collectionId": "바닥을 기어다니며",
-      "file": "8.jpg",
-      "src": "collections/바닥을 기어다니며/8.jpg"
-    },
-    {
-      "collectionId": "바닥을 기어다니며",
-      "file": "9.jpg",
-      "src": "collections/바닥을 기어다니며/9.jpg"
-    },
-    {
-      "collectionId": "바닥을 기어다니며",
-      "file": "10.jpg",
-      "src": "collections/바닥을 기어다니며/10.jpg"
-    },
-    {
-      "collectionId": "바닥을 기어다니며",
-      "file": "11.jpg",
-      "src": "collections/바닥을 기어다니며/11.jpg"
-    },
-    {
-      "collectionId": "바닥을 기어다니며",
-      "file": "12.jpg",
-      "src": "collections/바닥을 기어다니며/12.jpg"
-    },
-    {
-      "collectionId": "바닥을 기어다니며",
-      "file": "13.jpg",
-      "src": "collections/바닥을 기어다니며/13.jpg"
-    },
-    {
-      "collectionId": "paris to rome",
-      "file": "1.jpg",
-      "src": "collections/paris to rome/1.jpg"
-    },
-    {
-      "collectionId": "paris to rome",
-      "file": "2.jpg",
-      "src": "collections/paris to rome/2.jpg"
-    },
-    {
-      "collectionId": "paris to rome",
-      "file": "3.jpg",
-      "src": "collections/paris to rome/3.jpg"
-    },
-    {
-      "collectionId": "paris to rome",
-      "file": "4.jpg",
-      "src": "collections/paris to rome/4.jpg"
-    },
-    {
-      "collectionId": "paris to rome",
-      "file": "5.jpg",
-      "src": "collections/paris to rome/5.jpg"
-    },
-    {
-      "collectionId": "paris to rome",
-      "file": "6.jpg",
-      "src": "collections/paris to rome/6.jpg"
-    },
-    {
-      "collectionId": "paris to rome",
-      "file": "7.jpg",
-      "src": "collections/paris to rome/7.jpg"
-    },
-    {
-      "collectionId": "paris to rome",
-      "file": "8.jpg",
-      "src": "collections/paris to rome/8.jpg"
-    },
-    {
-      "collectionId": "paris to rome",
-      "file": "9.jpg",
-      "src": "collections/paris to rome/9.jpg"
-    },
-    {
-      "collectionId": "paris to rome",
-      "file": "10.jpg",
-      "src": "collections/paris to rome/10.jpg"
     },
     {
       "collectionId": "Mt.Fuji to Tokyo with BAHNO 1",
@@ -196,191 +96,6 @@
       "src": "collections/Mt.Fuji to Tokyo with BAHNO 1/7.jpg"
     },
     {
-      "collectionId": "Mt.Fuji to Tokyo with BAHNO 1",
-      "file": "8.jpg",
-      "src": "collections/Mt.Fuji to Tokyo with BAHNO 1/8.jpg"
-    },
-    {
-      "collectionId": "Mt.Fuji to Tokyo with BAHNO 1",
-      "file": "9.jpg",
-      "src": "collections/Mt.Fuji to Tokyo with BAHNO 1/9.jpg"
-    },
-    {
-      "collectionId": "Mt.Fuji to Tokyo with BAHNO 1",
-      "file": "10.jpg",
-      "src": "collections/Mt.Fuji to Tokyo with BAHNO 1/10.jpg"
-    },
-    {
-      "collectionId": "Mt.Fuji to Tokyo with BAHNO 1",
-      "file": "11.jpg",
-      "src": "collections/Mt.Fuji to Tokyo with BAHNO 1/11.jpg"
-    },
-    {
-      "collectionId": "Mt.Fuji to Tokyo with BAHNO 1",
-      "file": "12.jpg",
-      "src": "collections/Mt.Fuji to Tokyo with BAHNO 1/12.jpg"
-    },
-    {
-      "collectionId": "Mt.Fuji to Tokyo with BAHNO 1",
-      "file": "13.jpg",
-      "src": "collections/Mt.Fuji to Tokyo with BAHNO 1/13.jpg"
-    },
-    {
-      "collectionId": "Mt.Fuji to Tokyo with BAHNO 1",
-      "file": "14.jpg",
-      "src": "collections/Mt.Fuji to Tokyo with BAHNO 1/14.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "1.jpg",
-      "src": "collections/shizuoka/1.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "2.jpg",
-      "src": "collections/shizuoka/2.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "3.jpg",
-      "src": "collections/shizuoka/3.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "4.jpg",
-      "src": "collections/shizuoka/4.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "5.jpg",
-      "src": "collections/shizuoka/5.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "6.jpg",
-      "src": "collections/shizuoka/6.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "7.jpg",
-      "src": "collections/shizuoka/7.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "8.jpg",
-      "src": "collections/shizuoka/8.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "9.jpg",
-      "src": "collections/shizuoka/9.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "10.jpg",
-      "src": "collections/shizuoka/10.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "11.jpg",
-      "src": "collections/shizuoka/11.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "12.jpg",
-      "src": "collections/shizuoka/12.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "13.jpg",
-      "src": "collections/shizuoka/13.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "14.jpg",
-      "src": "collections/shizuoka/14.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "15.jpg",
-      "src": "collections/shizuoka/15.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "16.jpg",
-      "src": "collections/shizuoka/16.jpg"
-    },
-    {
-      "collectionId": "shizuoka",
-      "file": "17.jpg",
-      "src": "collections/shizuoka/17.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "1.jpg",
-      "src": "collections/okinawa/1.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "2.jpg",
-      "src": "collections/okinawa/2.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "3.jpg",
-      "src": "collections/okinawa/3.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "4.jpg",
-      "src": "collections/okinawa/4.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "5.jpg",
-      "src": "collections/okinawa/5.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "6.jpg",
-      "src": "collections/okinawa/6.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "7.jpg",
-      "src": "collections/okinawa/7.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "8.jpg",
-      "src": "collections/okinawa/8.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "9.jpg",
-      "src": "collections/okinawa/9.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "10.jpg",
-      "src": "collections/okinawa/10.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "11.jpg",
-      "src": "collections/okinawa/11.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "12.jpg",
-      "src": "collections/okinawa/12.jpg"
-    },
-    {
-      "collectionId": "okinawa",
-      "file": "13.jpg",
-      "src": "collections/okinawa/13.jpg"
-    },
-    {
       "collectionId": "통신보안",
       "file": "1.jpg",
       "src": "collections/통신보안/1.jpg"
@@ -392,8 +107,8 @@
     },
     {
       "collectionId": "통신보안",
-      "file": "3.jpg",
-      "src": "collections/통신보안/3.jpg"
+      "file": "3_sex.jpg",
+      "src": "collections/통신보안/3_sex.jpg"
     },
     {
       "collectionId": "통신보안",
@@ -429,51 +144,6 @@
       "collectionId": "통신보안",
       "file": "10.jpg",
       "src": "collections/통신보안/10.jpg"
-    },
-    {
-      "collectionId": "통신보안",
-      "file": "11.jpg",
-      "src": "collections/통신보안/11.jpg"
-    },
-    {
-      "collectionId": "통신보안",
-      "file": "12.jpg",
-      "src": "collections/통신보안/12.jpg"
-    },
-    {
-      "collectionId": "통신보안",
-      "file": "13.jpg",
-      "src": "collections/통신보안/13.jpg"
-    },
-    {
-      "collectionId": "통신보안",
-      "file": "14.jpg",
-      "src": "collections/통신보안/14.jpg"
-    },
-    {
-      "collectionId": "통신보안",
-      "file": "15.jpg",
-      "src": "collections/통신보안/15.jpg"
-    },
-    {
-      "collectionId": "통신보안",
-      "file": "16.jpg",
-      "src": "collections/통신보안/16.jpg"
-    },
-    {
-      "collectionId": "통신보안",
-      "file": "17.jpg",
-      "src": "collections/통신보안/17.jpg"
-    },
-    {
-      "collectionId": "통신보안",
-      "file": "18.jpg",
-      "src": "collections/통신보안/18.jpg"
-    },
-    {
-      "collectionId": "통신보안",
-      "file": "19.jpg",
-      "src": "collections/통신보안/19.jpg"
     }
   ]
 }

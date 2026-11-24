@@ -1,6 +1,14 @@
 const fs = require("fs");
 const path = require("path");
-const { RECENT_DIR, BOOKS_DIR, CONTACT_DIR, WEB, COLLECTIONS_URL } = require("./paths");
+const {
+  RECENT_WHITE_DIR,
+  RECENT_BLACK_DIR,
+  BOOKS_DIR,
+  CONTACT_DIR,
+  WEB,
+  COLLECTIONS_URL_WHITE,
+  COLLECTIONS_URL_BLACK,
+} = require("./paths");
 
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp"]);
 
@@ -106,6 +114,79 @@ function listProjects(dir, urlPrefix, createdIndex) {
       if (aKnown !== bKnown) return aKnown ? 1 : -1;
       if (aKnown && a.created !== b.created) return b.created - a.created;
       return a.order - b.order;
+    });
+}
+
+function fileNameOf(src) {
+  try {
+    return decodeURIComponent(String(src).split("/").pop() || "");
+  } catch (error) {
+    return String(src).split("/").pop() || "";
+  }
+}
+
+function mergeRecent(createdIndex) {
+  const white = listProjects(RECENT_WHITE_DIR, COLLECTIONS_URL_WHITE, createdIndex);
+  const black = listProjects(RECENT_BLACK_DIR, COLLECTIONS_URL_BLACK, createdIndex);
+  const byId = new Map();
+
+  function take(list, theme) {
+    list.forEach((project) => {
+      let item = byId.get(project.id);
+      if (!item) {
+        item = {
+          id: project.id,
+          year: project.year,
+          title: project.title,
+          text: project.text,
+          created: project.created,
+          order: project.order,
+          imagesWhite: [],
+          imagesBlack: [],
+        };
+        byId.set(project.id, item);
+      } else {
+        if (!item.year && project.year) item.year = project.year;
+        if ((!item.title || item.title === item.id) && project.title) item.title = project.title;
+        if (!item.text && project.text) item.text = project.text;
+        if (item.created == null && project.created != null) item.created = project.created;
+        if (project.order < item.order) item.order = project.order;
+      }
+      if (theme === "white") item.imagesWhite = project.images;
+      else item.imagesBlack = project.images;
+    });
+  }
+
+  take(white, "white");
+  take(black, "black");
+
+  return [...byId.values()]
+    .map((project) => {
+      const images = [...project.imagesWhite, ...project.imagesBlack].sort((a, b) =>
+        fileNameOf(a).localeCompare(fileNameOf(b), "en", { numeric: true })
+      );
+      return {
+        id: project.id,
+        year: project.year,
+        title: project.title,
+        text: project.text,
+        created: project.created,
+        order: project.order,
+        images,
+        imagesWhite: project.imagesWhite,
+        imagesBlack: project.imagesBlack,
+      };
+    })
+    .filter((project) => project.images.length)
+    .sort((a, b) => {
+      const aPinned = a.id.startsWith("_");
+      const bPinned = b.id.startsWith("_");
+      if (aPinned !== bPinned) return aPinned ? -1 : 1;
+      const aKnown = a.created != null;
+      const bKnown = b.created != null;
+      if (aKnown !== bKnown) return aKnown ? 1 : -1;
+      if (aKnown && a.created !== b.created) return b.created - a.created;
+      return a.order - b.order;
     })
     .map(({ created, order, ...project }) => project);
 }
@@ -175,8 +256,10 @@ function readContact() {
 function buildCatalog() {
   const createdIndex = readCreatedIndex();
   return {
-    recent: listProjects(RECENT_DIR, COLLECTIONS_URL, createdIndex),
-    books: listProjects(BOOKS_DIR, "books-and-printed-work", createdIndex),
+    recent: mergeRecent(createdIndex),
+    books: listProjects(BOOKS_DIR, "books-and-printed-work", createdIndex).map(
+      ({ created, order, ...project }) => project
+    ),
     contact: readContact(),
   };
 }
