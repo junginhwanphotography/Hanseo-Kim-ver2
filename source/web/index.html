@@ -58,13 +58,13 @@
         <canvas class="paint-board" id="paint-board" aria-label="Drawing" style="touch-action: none"></canvas>
         <div class="paint" id="paint">
           <div class="paint-colors" role="group" aria-label="Colors">
-            <button type="button" class="paint-color is-on" data-color="#ed1c24" style="background:#ed1c24" aria-label="Red" aria-pressed="true"></button>
+            <button type="button" class="paint-color paint-color--rainbow is-on" data-color="rainbow" aria-label="Rainbow" aria-pressed="true"></button>
+            <button type="button" class="paint-color" data-color="#ed1c24" style="background:#ed1c24" aria-label="Red" aria-pressed="false"></button>
             <button type="button" class="paint-color" data-color="#ff7f27" style="background:#ff7f27" aria-label="Orange" aria-pressed="false"></button>
             <button type="button" class="paint-color" data-color="#fff200" style="background:#fff200" aria-label="Yellow" aria-pressed="false"></button>
             <button type="button" class="paint-color" data-color="#22b14c" style="background:#22b14c" aria-label="Green" aria-pressed="false"></button>
             <button type="button" class="paint-color" data-color="#00a2e8" style="background:#00a2e8" aria-label="Blue" aria-pressed="false"></button>
             <button type="button" class="paint-color" data-color="#a349a4" style="background:#a349a4" aria-label="Violet" aria-pressed="false"></button>
-            <button type="button" class="paint-color paint-color--rainbow" data-color="rainbow" aria-label="Rainbow" aria-pressed="false"></button>
           </div>
           <div class="paint-tools" role="group" aria-label="Tools">
             <button type="button" class="paint-tool is-on" data-tool="gpen" aria-label="G pen" aria-pressed="true">
@@ -115,7 +115,7 @@
         eraser: { size: 28, erase: true, wiggle: false },
       };
       let paintTool = "gpen";
-      let paintColor = "#ed1c24";
+      let paintColor = "rainbow";
       let paintStroke = null;
       let paintPointer = null;
       let sprayRaf = 0;
