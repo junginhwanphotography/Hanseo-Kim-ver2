@@ -9,11 +9,13 @@
   height: min(78vh, 820px);
   overflow: hidden;
   background: #ffffff;
-  border: 1px solid #161616;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0 #000000;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  image-rendering: pixelated;
 }
 
 html.is-contact .paint-desk {
@@ -38,13 +40,25 @@ html.is-contact .paint-desk {
 }
 
 .paint {
+  --paint-face: #c0c0c0;
+  --paint-hi: #ffffff;
+  --paint-lo: #808080;
+  --paint-ink: #000000;
   position: absolute;
   z-index: 2;
-  top: 12px;
-  left: 12px;
+  top: 10px;
+  left: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  padding: 6px;
+  background: var(--paint-face);
+  border: 2px solid var(--paint-ink);
+  box-shadow:
+    inset 2px 2px 0 var(--paint-hi),
+    inset -2px -2px 0 var(--paint-lo),
+    3px 3px 0 var(--paint-ink);
+  image-rendering: pixelated;
 }
 
 .paint-colors,
@@ -54,56 +68,97 @@ html.is-contact .paint-desk {
 }
 
 .paint-colors {
-  grid-template-columns: repeat(3, 20px);
+  grid-template-columns: repeat(3, 22px);
 }
 
 .paint-tools {
-  grid-template-columns: 32px;
+  grid-template-columns: 30px;
 }
 
 .paint-color,
 .paint-tool {
   margin: 0;
   padding: 0;
-  border: 1px solid #000000;
+  border: 0;
+  border-radius: 0;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  image-rendering: pixelated;
+  box-shadow:
+    inset 2px 2px 0 var(--paint-hi),
+    inset -2px -2px 0 var(--paint-lo),
+    2px 2px 0 var(--paint-ink);
 }
 
 .paint-color {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 
-.paint-color.is-on,
+.paint-color--rainbow {
+  background: linear-gradient(
+    135deg,
+    #fff7d6 0%,
+    #ffb347 18%,
+    #ff3d6e 36%,
+    #c45cff 54%,
+    #6ecbff 72%,
+    #ffe566 88%,
+    #ffffff 100%
+  );
+}
+
+.paint-color.is-on {
+  box-shadow:
+    inset 2px 2px 0 var(--paint-lo),
+    inset -2px -2px 0 var(--paint-hi),
+    0 0 0 2px var(--paint-ink);
+}
+
 .paint-tool:focus-visible,
 .paint-color:focus-visible {
-  outline: 2px solid #000000;
+  outline: 2px solid var(--paint-ink);
   outline-offset: 2px;
 }
 
 .paint-tool {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  background: #ffffff;
-  color: #000000;
+  width: 30px;
+  height: 30px;
+  background: var(--paint-face);
+  color: var(--paint-ink);
 }
 
 .paint-tool svg {
   width: 16px;
   height: 16px;
   display: block;
+  shape-rendering: crispEdges;
 }
 
 .paint-tool.is-on {
-  background: #000000;
-  color: #ffffff;
+  background: var(--paint-ink);
+  color: var(--paint-hi);
+  box-shadow:
+    inset 2px 2px 0 #404040,
+    inset -2px -2px 0 #a0a0a0,
+    1px 1px 0 var(--paint-ink);
 }
 
 .paint-tool:disabled {
-  opacity: 0.35;
+  opacity: 0.4;
   cursor: default;
+  box-shadow:
+    inset 1px 1px 0 var(--paint-hi),
+    inset -1px -1px 0 var(--paint-lo);
+}
+
+.paint-tool:not(:disabled):active {
+  box-shadow:
+    inset 2px 2px 0 var(--paint-lo),
+    inset -2px -2px 0 var(--paint-hi);
 }
 
 html.is-drawing,
@@ -126,17 +181,15 @@ html.is-drawing body {
   .paint-desk {
     background: #000000;
     border-color: #00ff41;
+    box-shadow: 4px 4px 0 #00ff41;
   }
 
-  .paint-color,
-  .paint-tool {
-    border-color: #00ff41;
-  }
-
-  .paint-color.is-on,
-  .paint-tool:focus-visible,
-  .paint-color:focus-visible {
-    outline-color: #00ff41;
+  .paint {
+    --paint-face: #001a08;
+    --paint-hi: #00ff41;
+    --paint-lo: #006622;
+    --paint-ink: #00ff41;
+    background: #000000;
   }
 
   .paint-tool {
@@ -147,6 +200,10 @@ html.is-drawing body {
   .paint-tool.is-on {
     background: #00ff41;
     color: #000000;
+    box-shadow:
+      inset 2px 2px 0 #66ff8a,
+      inset -2px -2px 0 #009933,
+      1px 1px 0 #00ff41;
   }
 
   .paint-color,
