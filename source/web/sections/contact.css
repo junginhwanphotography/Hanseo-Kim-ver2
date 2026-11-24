@@ -67,8 +67,8 @@ html.is-contact .site-view {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .info-note {
+
+  html.is-dark .info-note {
     color: #1f9a45;
   }
-}
+

@@ -42,10 +42,10 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .book-title,
-  .book-thumb {
+
+  html.is-dark .book-title,
+  html.is-dark .book-thumb {
     color: #00ff41;
     cursor: url("../cursor-dark.png?v=2") 0 0, auto;
   }
-}
+

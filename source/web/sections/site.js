@@ -3,6 +3,7 @@
   const view = document.getElementById("site-view");
   const paintDesk = document.getElementById("paint-desk");
   const titles = {
+    home: "Hanseo Kim",
     photographs: "photographs",
     books: "books and printed work",
     contact: "contact",
@@ -12,7 +13,6 @@
   let active = null;
   let pressedLink = null;
   let pressedAt = 0;
-  let photosOpen = false;
 
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
@@ -23,7 +23,7 @@
     } catch (error) {
       hash = location.hash.replace(/^#/, "");
     }
-    if (!hash || hash === "intro") return { name: "photographs" };
+    if (!hash || hash === "intro") return { name: "home" };
     if (hash === "photographs" || hash === "recent") return { name: "photographs" };
     if (hash === "contact" || hash === "info") return { name: "contact" };
     if (hash === "books") return { name: "books" };
@@ -34,38 +34,8 @@
     if (hash.indexOf("photographs/") === 0) return { name: "photographs", id: hash.slice("photographs/".length) };
     if (hash.indexOf("recent/") === 0) return { name: "photographs", id: hash.slice("recent/".length) };
     if (hash.indexOf("books/") === 0) return { name: "books", id: hash.slice("books/".length) };
-    if (/^photo\/\d+$/.test(hash)) return { name: "photographs" };
-    return { name: "photographs" };
-  }
-
-  function syncSide(projects, route) {
-    const list = document.getElementById("side-collections");
-    const toggle = document.querySelector("[data-nav='photographs']");
-    if (!list || !toggle) return;
-    list.replaceChildren();
-    const preview = document.getElementById("side-preview");
-    const previewImg = preview && preview.querySelector("img");
-    const canHover = window.matchMedia("(hover: hover)").matches;
-    (projects || []).forEach((project) => {
-      const item = document.createElement("li");
-      const link = document.createElement("a");
-      link.href = "#photographs/" + encodeURIComponent(project.id);
-      link.textContent = project.title || project.id;
-      if (route.name === "photographs" && route.id === project.id) link.setAttribute("aria-current", "page");
-      const thumb = project.images && project.images[0];
-      if (thumb && preview && previewImg && canHover) {
-        link.addEventListener("mouseenter", () => {
-          if (previewImg.getAttribute("src") !== thumb) previewImg.src = thumb;
-          preview.classList.add("is-on");
-        });
-        link.addEventListener("mouseleave", () => preview.classList.remove("is-on"));
-      }
-      item.appendChild(link);
-      list.appendChild(item);
-    });
-    const open = photosOpen;
-    list.hidden = !open;
-    toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    if (/^photo\/\d+$/.test(hash)) return { name: "home" };
+    return { name: "home" };
   }
 
   function loadCatalog() {
@@ -159,8 +129,7 @@
     }
   }
 
-  function goMain(openPhotos) {
-    if (openPhotos) photosOpen = true;
+  function goHome() {
     const clean = location.pathname + location.search;
     if (location.hash) {
       history.pushState(null, "", clean);
@@ -187,6 +156,35 @@
     if (tag) openTag(tag);
   });
 
+  function syncNav(route) {
+    document.querySelectorAll(".site-nav [data-nav]").forEach((link) => {
+      const current = link.dataset.nav === route.name;
+      if (current) link.setAttribute("aria-current", "page");
+      else link.removeAttribute("aria-current");
+    });
+  }
+
+  function isDarkTheme() {
+    return document.documentElement.classList.contains("is-dark");
+  }
+
+  function openHomeMosaic(projects) {
+    const dark = isDarkTheme();
+    const root = dark ? "photographs_black/" : "photographs_white/";
+    const images = [];
+    projects.forEach((project) => {
+      const preferred = dark ? project.imagesBlack : project.imagesWhite;
+      const list =
+        preferred && preferred.length
+          ? preferred
+          : (project.images || []).filter((src) => String(src).indexOf(root) !== -1);
+      list.forEach((src) => {
+        if (String(src).indexOf(root) !== -1) images.push(src);
+      });
+    });
+    return window.HanseoGallery.open(view, { title: "", images }, { layout: "mosaic", label: false });
+  }
+
   async function render() {
     const token = ++renderToken;
     const route = parseHash();
@@ -197,13 +195,7 @@
     site.removeAttribute("inert");
     site.setAttribute("aria-hidden", "false");
     site.hidden = false;
-    document.querySelectorAll(".side-menu [data-nav]").forEach((link) => {
-      const current =
-        link.dataset.nav === route.name ||
-        (link.dataset.nav === "photographs" && route.name === "photographs");
-      if (current) link.setAttribute("aria-current", "page");
-      else link.removeAttribute("aria-current");
-    });
+    syncNav(route);
     let catalog;
     try {
       catalog = await loadCatalog();
@@ -220,13 +212,20 @@
     if (token !== renderToken) return;
     holdTop();
     const sectionTitle = titles[route.name];
-    syncSide(catalog.recent || [], route);
+    const projects = route.name === "books" ? catalog.books || [] : catalog.recent || [];
+
+    if (route.name === "home") {
+      document.title = "Hanseo Kim";
+      setActive(openHomeMosaic(catalog.recent || []));
+      return;
+    }
+
     if (route.name === "contact") {
       document.title = sectionTitle + " – Hanseo Kim";
       setActive(window.HanseoContact.render(view, catalog.contact || ""));
       return;
     }
-    const projects = route.name === "books" ? catalog.books || [] : catalog.recent || [];
+
     if (route.name === "photographs" && route.tag) {
       const images = [];
       projects.forEach((project) => {
@@ -238,25 +237,13 @@
       setActive(window.HanseoGallery.open(view, { title: "", images }, { layout: "mosaic", label: false }));
       return;
     }
+
     if (route.name === "photographs" && !route.id) {
-      // 메인만: 라이트=photographs_white, 다크=photographs_black. 컬렉션 페이지는 아래 merged images 사용.
-      const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      const root = dark ? "photographs_black/" : "photographs_white/";
-      const images = [];
-      projects.forEach((project) => {
-        const preferred = dark ? project.imagesBlack : project.imagesWhite;
-        const list =
-          preferred && preferred.length
-            ? preferred
-            : (project.images || []).filter((src) => String(src).indexOf(root) !== -1);
-        list.forEach((src) => {
-          if (String(src).indexOf(root) !== -1) images.push(src);
-        });
-      });
-      document.title = "Hanseo Kim";
-      setActive(window.HanseoGallery.open(view, { title: "", images }, { layout: "mosaic", label: false }));
+      document.title = sectionTitle + " – Hanseo Kim";
+      setActive(window.HanseoRecent.list(view, projects));
       return;
     }
+
     const project = route.id ? findProject(projects, route.id) : null;
     if (project) {
       document.title = (project.title || project.id) + " – Hanseo Kim";
@@ -268,14 +255,16 @@
       );
       return;
     }
-    if (route.name !== "books") {
-      setActive(null);
-      view.replaceChildren();
-      document.title = "Hanseo Kim";
+
+    if (route.name === "books") {
+      document.title = sectionTitle + " – Hanseo Kim";
+      setActive(window.HanseoBooks.list(view, catalog.books || []));
       return;
     }
-    document.title = sectionTitle + " – Hanseo Kim";
-    setActive(window.HanseoBooks.list(view, catalog.books || []));
+
+    setActive(null);
+    view.replaceChildren();
+    document.title = "Hanseo Kim";
   }
 
   document.addEventListener(
@@ -306,21 +295,9 @@
     },
     true
   );
-  document.querySelector("[data-nav='photographs']").addEventListener("click", () => {
-    const route = parseHash();
-    if (route.name === "photographs" && !route.id && !route.tag) {
-      photosOpen = !photosOpen;
-      const list = document.getElementById("side-collections");
-      const toggle = document.querySelector("[data-nav='photographs']");
-      if (list) list.hidden = !photosOpen;
-      if (toggle) toggle.setAttribute("aria-expanded", photosOpen ? "true" : "false");
-      return;
-    }
-    goMain(true);
-  });
-  document.querySelector("[data-nav='photographs-home']").addEventListener("click", (event) => {
+  document.querySelector("[data-nav='home']").addEventListener("click", (event) => {
     event.preventDefault();
-    goMain(false);
+    goHome();
   });
   function lockPhone() {
     if (!phoneQuery.matches) return;
@@ -345,13 +322,44 @@
 
   window.addEventListener("hashchange", render);
   window.addEventListener("popstate", render);
+  function syncThemeToggle() {
+    const button = document.getElementById("theme-toggle");
+    if (!button) return;
+    const dark = isDarkTheme();
+    button.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+  }
+
+  function setTheme(dark) {
+    document.documentElement.classList.toggle("is-dark", dark);
+    try {
+      localStorage.setItem("hanseo-theme", dark ? "dark" : "light");
+    } catch (error) {}
+    syncThemeToggle();
+    window.dispatchEvent(new Event("hanseo-theme"));
+  }
+
+  const themeToggle = document.getElementById("theme-toggle");
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => setTheme(!isDarkTheme()));
+  }
+  syncThemeToggle();
+
   const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
   const onColorScheme = () => {
-    const route = parseHash();
-    if (route.name === "photographs" && !route.id && !route.tag) render();
+    let saved = null;
+    try {
+      saved = localStorage.getItem("hanseo-theme");
+    } catch (error) {}
+    if (saved === "light" || saved === "dark") return;
+    document.documentElement.classList.toggle("is-dark", colorScheme.matches);
+    syncThemeToggle();
+    if (parseHash().name === "home") render();
   };
   if (colorScheme.addEventListener) colorScheme.addEventListener("change", onColorScheme);
   else if (colorScheme.addListener) colorScheme.addListener(onColorScheme);
+  window.addEventListener("hanseo-theme", () => {
+    if (parseHash().name === "home") render();
+  });
   let typed = "";
   let typeTimer = 0;
   let lastLetter = "";
@@ -404,7 +412,7 @@
     if (event.key === "Escape") {
       if (event.hanseoPhoto || document.documentElement.classList.contains("photo-open")) return;
       const route = parseHash();
-      if (route.id || route.tag || route.name !== "photographs") goMain(false);
+      if (route.name !== "home") goHome();
       return;
     }
     const letter = commandLetter(event);

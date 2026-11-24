@@ -28,12 +28,12 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-  html,
-  body {
+
+  html.is-dark,
+  html.is-dark body {
     background: #000000;
     color: #00ff41;
     color-scheme: dark;
     cursor: url("cursor-dark.png?v=2") 0 0, auto;
   }
-}
+

@@ -1,12 +1,14 @@
 .paint-desk {
   position: fixed;
-  top: 24px;
+  top: 58px;
   right: 28px;
+  bottom: 28px;
   z-index: 3;
   display: none;
   box-sizing: border-box;
   width: min(58vw, 720px);
-  height: min(78vh, 820px);
+  height: auto;
+  max-height: calc(100vh - 86px);
   overflow: hidden;
   background: #ffffff;
   border: 2px solid #000000;
@@ -174,6 +176,7 @@ html.is-drawing body {
     left: 18px;
     width: auto;
     height: min(42vh, 380px);
+    max-height: none;
   }
 
   .paint {
@@ -216,14 +219,14 @@ html.is-drawing body {
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .paint-desk {
+
+  html.is-dark .paint-desk {
     background: #000000;
     border-color: #00ff41;
     box-shadow: 4px 4px 0 #00ff41;
   }
 
-  .paint {
+  html.is-dark .paint {
     --paint-face: #001a08;
     --paint-hi: #00ff41;
     --paint-lo: #006622;
@@ -231,12 +234,12 @@ html.is-drawing body {
     background: #000000;
   }
 
-  .paint-tool {
+  html.is-dark .paint-tool {
     background: #000000;
     color: #00ff41;
   }
 
-  .paint-tool.is-on {
+  html.is-dark .paint-tool.is-on {
     background: #00ff41;
     color: #000000;
     box-shadow:
@@ -245,8 +248,8 @@ html.is-drawing body {
       1px 1px 0 #00ff41;
   }
 
-  .paint-color,
-  .paint-tool:not(:disabled) {
+  html.is-dark .paint-color,
+  html.is-dark .paint-tool:not(:disabled) {
     cursor: url("../cursor-dark.png?v=2") 0 0, auto;
   }
-}
+

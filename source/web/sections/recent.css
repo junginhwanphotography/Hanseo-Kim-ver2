@@ -1,6 +1,6 @@
 .recent-list {
-  width: calc(100% - 9vw);
-  margin: 124px 0 88px 4.5vw;
+  width: calc(100% - 12vw);
+  margin: 48px 0 88px 7vw;
   display: flex;
   flex-direction: column;
   gap: 11px;
@@ -8,8 +8,8 @@
 
 .recent-row {
   display: grid;
-  grid-template-columns: 7.5vw 30.5vw minmax(0, 1fr);
-  column-gap: 0;
+  grid-template-columns: minmax(160px, 28vw) minmax(0, 1fr);
+  column-gap: 18px;
   align-items: start;
   color: #111111;
   font-size: 14px;
@@ -18,18 +18,14 @@
   text-decoration: none;
 }
 
-.recent-year,
 .recent-text {
   color: #999999;
+  white-space: pre-wrap;
 }
 
 .recent-title {
   font-weight: 300;
   text-decoration: none;
-}
-
-.recent-text {
-  white-space: pre-wrap;
 }
 
 .recent-row:hover .recent-title {
@@ -38,13 +34,19 @@
 
 .recent-preview {
   position: fixed;
-  right: 36px;
-  bottom: 36px;
-  z-index: 6;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 24px;
+  box-sizing: border-box;
+  line-height: 0;
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.6s cubic-bezier(0.19, 1, 0.22, 1), visibility 0.6s;
+  transition: opacity 0.45s cubic-bezier(0.19, 1, 0.22, 1), visibility 0.45s;
 }
 
 .recent-preview.is-on {
@@ -53,7 +55,7 @@
 }
 
 .recent-preview-frame {
-  overflow: hidden;
+  overflow: visible;
   line-height: 0;
 }
 
@@ -61,11 +63,13 @@
   display: block;
   width: auto;
   height: auto;
-  max-width: min(21vw, 370px);
-  max-height: min(52vh, 530px);
-  transform: scale(1.22);
+  max-width: min(58vw, 820px);
+  max-height: min(68vh, 720px);
+  object-fit: contain;
+  object-position: center;
+  transform: scale(1.06);
   transform-origin: center;
-  transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+  transition: transform 0.55s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .recent-preview.is-on img {
@@ -73,8 +77,8 @@
 }
 
 .recent-preview img.is-landscape {
-  max-width: min(36vw, 650px);
-  max-height: min(44vh, 460px);
+  max-width: min(58vw, 820px);
+  max-height: min(68vh, 720px);
 }
 
 @media (hover: none) {
@@ -90,26 +94,26 @@
   }
 
   .recent-row {
-    grid-template-columns: 78px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     row-gap: 2px;
   }
 
-  .recent-text {
-    grid-column: 2;
+  .recent-preview {
+    display: none;
+    padding: 0;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .recent-row {
+
+  html.is-dark .recent-row {
     color: #00ff41;
   }
 
-  .recent-year,
-  .recent-text {
+  html.is-dark .recent-text {
     color: #1f9a45;
   }
 
-  .recent-row:hover .recent-title {
+  html.is-dark .recent-row:hover .recent-title {
     color: #66ff99;
   }
-}
+

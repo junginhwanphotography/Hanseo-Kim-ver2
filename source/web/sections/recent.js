@@ -39,17 +39,14 @@
     projects.forEach((project) => {
       const row = document.createElement("a");
       row.className = "recent-row";
-      row.href = "#recent/" + encodeURIComponent(project.id);
-      const year = document.createElement("span");
-      year.className = "recent-year";
-      year.textContent = project.year || "";
+      row.href = "#photographs/" + encodeURIComponent(project.id);
       const title = document.createElement("span");
       title.className = "recent-title";
       title.textContent = project.title || project.id;
       const text = document.createElement("span");
       text.className = "recent-text";
       text.textContent = project.text || "";
-      row.append(year, title, text);
+      row.append(title, text);
       const thumb = project.images && project.images[0];
       if (thumb) {
         row.addEventListener("mouseenter", () => showPreview(thumb));

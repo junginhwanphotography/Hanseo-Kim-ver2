@@ -213,6 +213,7 @@
       panX = 0;
       panY = 0;
       gestureScale = 1;
+      if (stage) stage.classList.remove("is-panning");
       applyZoom();
     }
 
@@ -234,6 +235,24 @@
         panX = 0;
         panY = 0;
       }
+      applyZoom();
+    }
+
+    function toggleZoomAt(clientX, clientY) {
+      if (scale > 1.01) {
+        resetZoom();
+        return;
+      }
+      if (!stage) return;
+      const rect = stage.getBoundingClientRect();
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const mx = clientX - rect.left;
+      const my = clientY - rect.top;
+      const next = 2.4;
+      panX = (mx - cx) * (1 - next);
+      panY = (my - cy) * (1 - next);
+      scale = next;
       applyZoom();
     }
 
@@ -315,7 +334,7 @@
       });
       const zones = [
         ["photo-zone-prev", "Previous photograph"],
-        ["photo-zone-close", "Close photograph"],
+        ["photo-zone-zoom", "Zoom photograph"],
         ["photo-zone-next", "Next photograph"],
       ];
       zones.forEach(([name, label]) => {
@@ -325,16 +344,30 @@
         button.setAttribute("aria-label", label);
         stage.appendChild(button);
       });
+      const closeBtn = document.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.className = "photo-close";
+      closeBtn.setAttribute("aria-label", "Close photograph");
+      closeBtn.innerHTML =
+        '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 3.2 12.8 12.8M12.8 3.2 3.2 12.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg>';
+      stage.appendChild(closeBtn);
       stage.addEventListener("click", (event) => {
         if (ignoreClick) {
           ignoreClick = false;
           return;
         }
-        if (scale > 1.01) return;
+        if (event.target.closest(".photo-close")) {
+          closeViewer();
+          return;
+        }
         const zone = event.target.closest(".photo-zone");
         if (!zone || zone.disabled) return;
-        if (zone.classList.contains("photo-zone-close")) closeViewer();
-        else if (zone.classList.contains("photo-zone-prev")) step(-1);
+        if (zone.classList.contains("photo-zone-zoom")) {
+          toggleZoomAt(event.clientX, event.clientY);
+          return;
+        }
+        if (scale > 1.01) return;
+        if (zone.classList.contains("photo-zone-prev")) step(-1);
         else if (zone.classList.contains("photo-zone-next")) step(1);
       });
       stage.addEventListener("pointerdown", onPointerDown);
@@ -401,10 +434,19 @@
       gestureScale = scale;
     }
 
+    function markIgnoreClick() {
+      ignoreClick = true;
+      window.clearTimeout(ignoreTimer);
+      ignoreTimer = window.setTimeout(() => {
+        ignoreClick = false;
+      }, 280);
+    }
+
     function onPointerDown(event) {
       if (!stage || scale <= 1.01) return;
+      if (event.target.closest(".photo-close")) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
-      drag = { x: event.clientX, y: event.clientY, panX, panY, id: event.pointerId };
+      drag = { x: event.clientX, y: event.clientY, panX, panY, id: event.pointerId, moved: false };
       try {
         stage.setPointerCapture(event.pointerId);
       } catch (error) {}
@@ -416,17 +458,36 @@
 
     function onPointerMove(event) {
       if (!drag || event.pointerId !== drag.id) return;
-      panX = drag.panX + (event.clientX - drag.x);
-      panY = drag.panY + (event.clientY - drag.y);
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      if (!drag.moved && Math.hypot(dx, dy) > 4) {
+        drag.moved = true;
+        stage.classList.add("is-panning");
+      }
+      if (!drag.moved) return;
+      event.preventDefault();
+      panX = drag.panX + dx;
+      panY = drag.panY + dy;
       applyZoom();
     }
 
     function onPointerUp(event) {
       if (!drag || (event && event.pointerId !== drag.id)) return;
+      const moved = drag.moved;
       drag = null;
+      if (stage) stage.classList.remove("is-panning");
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointercancel", onPointerUp);
+      if (moved) {
+        markIgnoreClick();
+        return;
+      }
+      // Click without drag while zoomed: zoom back out.
+      if (scale > 1.01) {
+        resetZoom();
+        markIgnoreClick();
+      }
     }
 
     function onTouchStart(event) {

@@ -174,11 +174,43 @@
 }
 
 .photo-stage.is-zoomed {
-  cursor: grab;
+  cursor: zoom-out;
+}
+
+.photo-stage.is-zoomed.is-panning {
+  cursor: grabbing;
 }
 
 .photo-stage.is-zoomed .photo-zone {
   pointer-events: none;
+}
+
+.photo-close {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #000000;
+  cursor: pointer;
+}
+
+.photo-close svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.photo-close:focus,
+.photo-close:focus-visible {
+  outline: none;
 }
 
 .photo-zone {
@@ -199,8 +231,9 @@
   cursor: url("../cursor-left.png?v=3") 4 8, w-resize;
 }
 
-.photo-zone-close {
+.photo-zone-zoom {
   left: 33.333%;
+  cursor: zoom-in;
 }
 
 .photo-zone-next {
@@ -266,40 +299,57 @@ html.photo-open .site-nav {
   .mosaic-item {
     cursor: default;
   }
+
+  .photo-close {
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .photo-close svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 
-@media (prefers-color-scheme: dark) {
-  .book-arrow {
+
+  html.is-dark .book-arrow {
     color: #00ff41;
   }
 
-  .book-dots button {
+  html.is-dark .book-dots button {
     background: #00ff41;
   }
 
-  .project-label {
+  html.is-dark .project-label {
     color: #00ff41;
   }
 
-  .mosaic-item {
+  html.is-dark .mosaic-item {
     background: #111111;
     cursor: url("../cursor-dark.png?v=2") 0 0, auto;
   }
 
-  .photo-stage {
+  html.is-dark .photo-stage {
     background: #000000;
   }
 
-  .photo-zone,
-  .photo-zone:disabled {
+  html.is-dark .photo-close {
+    color: #00ff41;
     cursor: url("../cursor-dark.png?v=2") 0 0, auto;
   }
 
-  .photo-zone-prev {
+  html.is-dark .photo-zone,
+  html.is-dark .photo-zone:disabled {
+    cursor: url("../cursor-dark.png?v=2") 0 0, auto;
+  }
+
+  html.is-dark .photo-zone-prev {
     cursor: url("../cursor-left-dark.png?v=2") 4 8, w-resize;
   }
 
-  .photo-zone-next {
+  html.is-dark .photo-zone-next {
     cursor: url("../cursor-right-dark.png?v=2") 11 8, e-resize;
   }
-}
+

@@ -8,20 +8,36 @@
     <link rel="icon" href="data:," />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="hanseo.css?v=29" />
-    <link rel="stylesheet" href="sections/site.css?v=28" />
-    <link rel="stylesheet" href="sections/recent.css?v=9" />
-    <link rel="stylesheet" href="sections/books.css?v=6" />
-    <link rel="stylesheet" href="sections/contact.css?v=7" />
-    <link rel="stylesheet" href="sections/gallery.css?v=27" />
-    <link rel="stylesheet" href="sections/paint.css?v=6" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,600;1,6..72,300&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="hanseo.css?v=30" />
+    <link rel="stylesheet" href="sections/site.css?v=41" />
+    <link rel="stylesheet" href="sections/recent.css?v=17" />
+    <link rel="stylesheet" href="sections/books.css?v=7" />
+    <link rel="stylesheet" href="sections/contact.css?v=8" />
+    <link rel="stylesheet" href="sections/gallery.css?v=33" />
+    <link rel="stylesheet" href="sections/paint.css?v=9" />
     <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("hanseo-theme");
+          var dark =
+            saved === "dark" ||
+            (saved !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("is-dark", dark);
+        } catch (error) {
+          document.documentElement.classList.toggle(
+            "is-dark",
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+          );
+        }
+      })();
       if ("scrollRestoration" in history) history.scrollRestoration = "manual";
       scrollTo(0, 0);
       document.documentElement.classList.add("is-inside");
-      if (location.hash === "#" || location.hash === "#intro" || location.hash === "#photographs" || location.hash === "#recent") {
+      if (location.hash === "#" || location.hash === "#intro") {
         history.replaceState(null, "", location.pathname + location.search);
+      } else if (location.hash === "#recent") {
+        history.replaceState(null, "", location.pathname + location.search + "#photographs");
       }
       function fitPhoneFrame() {
         var phone = window.matchMedia("(max-width: 720px)").matches;
@@ -41,18 +57,20 @@
   </head>
   <body>
     <div class="site" id="site">
-      <aside class="side">
-        <a class="side-name" href="./" data-nav="photographs-home">Hanseo Kim</a>
-        <nav class="side-menu" aria-label="Site">
-          <button type="button" data-nav="photographs" aria-expanded="false">photographs</button>
-          <a href="#books" data-nav="books">books and printed work</a>
-          <a href="#contact" data-nav="contact">contact</a>
-          <ul class="side-collections" id="side-collections" hidden></ul>
+      <header class="site-nav">
+        <nav aria-label="Site">
+          <ul>
+            <li><a href="./" data-nav="home">Hanseo Kim</a></li>
+            <li><a href="#photographs" data-nav="photographs">photographs</a></li>
+            <li><a href="#books" data-nav="books">books and printed work</a></li>
+            <li><a href="#contact" data-nav="contact">contact</a></li>
+          </ul>
         </nav>
-      </aside>
-      <div class="side-preview" id="side-preview" aria-hidden="true">
-        <img alt="" />
-      </div>
+      </header>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch color theme">
+        <svg class="theme-toggle-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.2 2.2A6.2 6.2 0 1 0 13.8 11 5 5 0 0 1 11.2 2.2Z" fill="currentColor"/></svg>
+        <svg class="theme-toggle-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.6" fill="currentColor"/><path d="M8 1.4v1.8M8 12.8v1.8M1.4 8h1.8M12.8 8h1.8M3.2 3.2l1.3 1.3M11.5 11.5l1.3 1.3M12.8 3.2l-1.3 1.3M4.5 11.5l-1.3 1.3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="square"/></svg>
+      </button>
       <div class="site-view" id="site-view"></div>
       <div class="paint-desk" id="paint-desk" hidden aria-hidden="true">
         <canvas class="paint-board" id="paint-board" aria-label="Drawing" style="touch-action: none"></canvas>
@@ -689,10 +707,10 @@
       sizeBoard();
       window.addEventListener("resize", sizeBoard);
     </script>
-    <script src="sections/gallery.js?v=23"></script>
-    <script src="sections/recent.js?v=3"></script>
+    <script src="sections/gallery.js?v=28"></script>
+    <script src="sections/recent.js?v=4"></script>
     <script src="sections/books.js?v=1"></script>
     <script src="sections/contact.js?v=4"></script>
-    <script src="sections/site.js?v=31"></script>
+    <script src="sections/site.js?v=34"></script>
   </body>
 </html>
