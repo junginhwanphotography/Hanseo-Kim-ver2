@@ -159,6 +159,17 @@
     }
   }
 
+  function goMain(openPhotos) {
+    if (openPhotos) photosOpen = true;
+    const clean = location.pathname + location.search;
+    if (location.hash) {
+      history.pushState(null, "", clean);
+      render();
+      return;
+    }
+    render();
+  }
+
   function openTag(tag) {
     const next = "photographs/tag/" + tag;
     let hash = "";
@@ -305,8 +316,11 @@
       if (toggle) toggle.setAttribute("aria-expanded", photosOpen ? "true" : "false");
       return;
     }
-    photosOpen = true;
-    location.hash = "photographs";
+    goMain(true);
+  });
+  document.querySelector("[data-nav='photographs-home']").addEventListener("click", (event) => {
+    event.preventDefault();
+    goMain(false);
   });
   function lockPhone() {
     if (!phoneQuery.matches) return;
@@ -330,6 +344,7 @@
   lockPhone();
 
   window.addEventListener("hashchange", render);
+  window.addEventListener("popstate", render);
   const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
   const onColorScheme = () => {
     const route = parseHash();
@@ -389,8 +404,7 @@
     if (event.key === "Escape") {
       if (event.hanseoPhoto || document.documentElement.classList.contains("photo-open")) return;
       const route = parseHash();
-      if (route.id || route.tag) location.hash = route.name;
-      else if (route.name !== "photographs") location.hash = "photographs";
+      if (route.id || route.tag || route.name !== "photographs") goMain(false);
       return;
     }
     const letter = commandLetter(event);

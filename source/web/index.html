@@ -20,8 +20,8 @@
       if ("scrollRestoration" in history) history.scrollRestoration = "manual";
       scrollTo(0, 0);
       document.documentElement.classList.add("is-inside");
-      if (!location.hash || location.hash === "#" || location.hash === "#intro") {
-        location.replace("#photographs");
+      if (location.hash === "#" || location.hash === "#intro" || location.hash === "#photographs" || location.hash === "#recent") {
+        history.replaceState(null, "", location.pathname + location.search);
       }
       function fitPhoneFrame() {
         var phone = window.matchMedia("(max-width: 720px)").matches;
@@ -42,7 +42,7 @@
   <body>
     <div class="site" id="site">
       <aside class="side">
-        <a class="side-name" href="#photographs" data-nav="photographs-home">Hanseo Kim</a>
+        <a class="side-name" href="./" data-nav="photographs-home">Hanseo Kim</a>
         <nav class="side-menu" aria-label="Site">
           <button type="button" data-nav="photographs" aria-expanded="false">photographs</button>
           <a href="#books" data-nav="books">books and printed work</a>
@@ -482,6 +482,6 @@
     <script src="sections/recent.js?v=3"></script>
     <script src="sections/books.js?v=1"></script>
     <script src="sections/contact.js?v=4"></script>
-    <script src="sections/site.js?v=30"></script>
+    <script src="sections/site.js?v=31"></script>
   </body>
 </html>
