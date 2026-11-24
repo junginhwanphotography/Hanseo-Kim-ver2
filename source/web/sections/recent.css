@@ -18,6 +18,10 @@
   text-decoration: none;
 }
 
+.recent-row.is-spaced-top {
+  margin-top: 2.5rem;
+}
+
 .recent-text {
   color: #999999;
   white-space: pre-wrap;

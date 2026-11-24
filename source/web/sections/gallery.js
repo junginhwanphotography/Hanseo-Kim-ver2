@@ -155,28 +155,128 @@
     root.appendChild(article);
 
     let frame = 0;
-    function layout() {
-      const width = mosaic.clientWidth;
-      if (width < 20 || !items.length) return;
-      const gutter = 10;
-      const columns = width < 720 ? 1 : 3;
+    function ratioOf(item) {
+      const nw = item.img.naturalWidth || 3;
+      const nh = item.img.naturalHeight || 2;
+      return nh / nw;
+    }
+
+    function placeAt(item, left, top, itemWidth, fixedHeight) {
+      const itemHeight =
+        fixedHeight != null ? Math.max(1, Math.round(fixedHeight)) : Math.max(1, Math.round(ratioOf(item) * itemWidth));
+      item.el.style.left = Math.round(left) + "px";
+      item.el.style.top = Math.round(top) + "px";
+      item.el.style.width = Math.round(itemWidth) + "px";
+      item.el.style.height = itemHeight + "px";
+      return itemHeight;
+    }
+
+    function layoutMobile(width) {
+      const gutter = 6;
+      const pool = items.slice();
+      let y = 0;
+      let block = 0;
+
+      function takePrefer(wantPortrait) {
+        const index = pool.findIndex((item) => {
+          const portrait = ratioOf(item) >= 1;
+          return wantPortrait ? portrait : !portrait;
+        });
+        if (index < 0) return pool.shift();
+        return pool.splice(index, 1)[0];
+      }
+
+      function naturalH(item, itemWidth) {
+        return Math.max(1, Math.round(ratioOf(item) * itemWidth));
+      }
+
+      // Fill each zigzag block so tall side matches the two stacked sides (cover crop).
+      while (pool.length) {
+        if (pool.length === 1) {
+          y += placeAt(pool.shift(), 0, y, width) + gutter;
+          break;
+        }
+        if (pool.length === 2) {
+          const half = (width - gutter) / 2;
+          const a = pool.shift();
+          const b = pool.shift();
+          const blockH = Math.max(naturalH(a, half), naturalH(b, half));
+          placeAt(a, 0, y, half, blockH);
+          placeAt(b, half + gutter, y, half, blockH);
+          y += blockH + gutter;
+          break;
+        }
+
+        const tallLeft = block % 2 === 0;
+        block += 1;
+        const tallW = Math.round((width - gutter) * 0.42);
+        const stackW = width - gutter - tallW;
+        const tall = takePrefer(true);
+        const a = takePrefer(false);
+        const b = takePrefer(false);
+        const aNat = naturalH(a, stackW);
+        const bNat = naturalH(b, stackW);
+        const stackNat = aNat + gutter + bNat;
+        const tallNat = naturalH(tall, tallW);
+        const blockH = Math.max(tallNat, stackNat);
+        const stackInner = Math.max(2, blockH - gutter);
+        const aH = Math.max(1, Math.round((stackInner * aNat) / (aNat + bNat)));
+        const bH = Math.max(1, stackInner - aH);
+
+        if (tallLeft) {
+          placeAt(tall, 0, y, tallW, blockH);
+          placeAt(a, tallW + gutter, y, stackW, aH);
+          placeAt(b, tallW + gutter, y + aH + gutter, stackW, bH);
+        } else {
+          placeAt(a, 0, y, stackW, aH);
+          placeAt(b, 0, y + aH + gutter, stackW, bH);
+          placeAt(tall, stackW + gutter, y, tallW, blockH);
+        }
+        y += blockH + gutter;
+      }
+      mosaic.style.height = Math.max(0, y - gutter) + "px";
+    }
+
+    function layoutDesktop(width, columns = 3) {
+      const collectionId = String(project.id || "").normalize("NFC");
+      const gutter =
+        collectionId === "레이아웃 테스트3"
+          ? 3
+          : collectionId === "레이아웃 테스트2"
+            ? 6
+            : 10;
       const base = Math.floor((width - gutter * (columns - 1)) / columns);
       const heights = Array(columns).fill(0);
-      items.forEach(({ el, img }) => {
+      items.forEach((item) => {
         const column = heights.indexOf(Math.min.apply(null, heights));
         const left = (base + gutter) * column;
         const itemWidth = column === columns - 1 ? width - left : base;
-        const ratio =
-          img.naturalWidth && img.naturalHeight ? img.naturalHeight / img.naturalWidth : 0.72;
-        const itemHeight = Math.max(1, Math.floor(ratio * itemWidth));
-        el.style.left = left + "px";
-        el.style.top = heights[column] + "px";
-        el.style.width = itemWidth + "px";
-        el.style.height = itemHeight + "px";
+        const itemHeight = placeAt(item, left, heights[column], itemWidth);
         heights[column] += itemHeight + gutter;
       });
       const tallest = Math.max.apply(null, heights);
       mosaic.style.height = Math.max(0, tallest - gutter) + "px";
+    }
+
+    function layout() {
+      const width = mosaic.clientWidth;
+      if (width < 20 || !items.length) return;
+      const collectionId = String(project.id || "").normalize("NFC");
+      // 레이아웃 테스트1/2/3만 실험 레이아웃. 그 외·메인은 원래(모바일 1열 / PC 3열).
+      if (collectionId === "레이아웃 테스트1") {
+        if (width < 720) layoutMobile(width);
+        else layoutDesktop(width, 3);
+        return;
+      }
+      if (collectionId === "레이아웃 테스트2") {
+        layoutDesktop(width, 2);
+        return;
+      }
+      if (collectionId === "레이아웃 테스트3") {
+        layoutDesktop(width, 3);
+        return;
+      }
+      layoutDesktop(width, width < 720 ? 1 : 3);
     }
 
     function schedule() {
@@ -205,7 +305,6 @@
 
     function placeStage() {
       if (!stage) return;
-      if (window.matchMedia("(max-width: 720px)").matches) closeViewer();
     }
 
     function resetZoom() {
@@ -315,7 +414,7 @@
     }
 
     function openViewer(nextIndex) {
-      if (window.matchMedia("(max-width: 720px)").matches || !images.length) return;
+      if (!images.length) return;
       closeViewer();
       stage = document.createElement("div");
       stage.className = "photo-stage";

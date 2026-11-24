@@ -36,9 +36,16 @@
       preview.classList.remove("is-on");
     }
 
+    let sawLayoutTest = false;
     projects.forEach((project) => {
+      const id = String(project.id || "").normalize("NFC");
+      const isLayoutTest = /^레이아웃 테스트\d/.test(id);
       const row = document.createElement("a");
       row.className = "recent-row";
+      if (isLayoutTest && !sawLayoutTest) {
+        row.classList.add("is-spaced-top");
+        sawLayoutTest = true;
+      }
       row.href = "#photographs/" + encodeURIComponent(project.id);
       const title = document.createElement("span");
       title.className = "recent-title";
