@@ -8,7 +8,6 @@
     caption.className = "book-caption";
     const lines = [project.title || project.id || ""];
     if (project.text) lines.push(project.text);
-    if (project.year) lines.push(project.year);
     lines.filter(Boolean).forEach((line, lineIndex) => {
       String(line)
         .split("\n")
@@ -197,10 +196,45 @@
     let touchStart = null;
     let ignoreClick = false;
     let ignoreTimer = 0;
+    let scale = 1;
+    let panX = 0;
+    let panY = 0;
+    let gestureScale = 1;
+    let drag = null;
+    const STEP_LOCK_MS = 140;
 
     function placeStage() {
       if (!stage) return;
       if (window.matchMedia("(max-width: 720px)").matches) closeViewer();
+    }
+
+    function resetZoom() {
+      scale = 1;
+      panX = 0;
+      panY = 0;
+      gestureScale = 1;
+      applyZoom();
+    }
+
+    function applyZoom() {
+      if (!stage) return;
+      stage.classList.toggle("is-zoomed", scale > 1.01);
+      slides.forEach((slide, n) => {
+        const img = slide.querySelector("img");
+        if (!img) return;
+        if (n === index) img.style.transform = "translate(" + panX + "px, " + panY + "px) scale(" + scale + ")";
+        else img.style.transform = "";
+      });
+    }
+
+    function setScale(next) {
+      scale = Math.min(5, Math.max(1, next));
+      if (scale <= 1.01) {
+        scale = 1;
+        panX = 0;
+        panY = 0;
+      }
+      applyZoom();
     }
 
     function arm(next) {
@@ -219,12 +253,14 @@
 
     function show(nextIndex) {
       index = nextIndex;
+      resetZoom();
       syncZones();
       const token = ++showToken;
       arm(index);
       const apply = () => {
         if (token !== showToken || !stage) return;
         slides.forEach((slide, n) => slide.classList.toggle("is-active", n === index));
+        applyZoom();
       };
       const img = slides[index].querySelector("img");
       if (img.complete && img.naturalWidth) apply();
@@ -240,7 +276,7 @@
       show(next);
       window.setTimeout(() => {
         busy = false;
-      }, 120);
+      }, STEP_LOCK_MS);
     }
 
     function closeViewer() {
@@ -248,10 +284,15 @@
       stage.remove();
       stage = null;
       slides = [];
+      resetZoom();
+      drag = null;
       document.documentElement.classList.remove("photo-open");
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
     }
 
     function openViewer(nextIndex) {
@@ -289,12 +330,17 @@
           ignoreClick = false;
           return;
         }
+        if (scale > 1.01) return;
         const zone = event.target.closest(".photo-zone");
         if (!zone || zone.disabled) return;
         if (zone.classList.contains("photo-zone-close")) closeViewer();
         else if (zone.classList.contains("photo-zone-prev")) step(-1);
         else if (zone.classList.contains("photo-zone-next")) step(1);
       });
+      stage.addEventListener("pointerdown", onPointerDown);
+      stage.addEventListener("gesturestart", onGestureStart, { passive: false });
+      stage.addEventListener("gesturechange", onGestureChange, { passive: false });
+      stage.addEventListener("gestureend", onGestureEnd, { passive: false });
       const host = document.querySelector(".site") || document.body;
       host.appendChild(stage);
       document.documentElement.classList.add("photo-open");
@@ -323,21 +369,79 @@
 
     function onWheel(event) {
       if (!stage) return;
+      // Trackpad pinch arrives as ctrl + wheel.
+      if (event.ctrlKey) {
+        event.preventDefault();
+        setScale(scale * Math.exp(-event.deltaY * 0.012));
+        return;
+      }
+      if (scale > 1.01) {
+        event.preventDefault();
+        panX -= event.deltaX;
+        panY -= event.deltaY;
+        applyZoom();
+      }
+    }
+
+    function onGestureStart(event) {
+      if (!stage) return;
       event.preventDefault();
-      const horizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
-      const delta = horizontal ? event.deltaX : event.deltaY;
-      if (Math.abs(delta) < 4) return;
-      step(delta > 0 ? 1 : -1);
+      gestureScale = scale;
+    }
+
+    function onGestureChange(event) {
+      if (!stage) return;
+      event.preventDefault();
+      setScale(gestureScale * (event.scale || 1));
+    }
+
+    function onGestureEnd(event) {
+      if (!stage) return;
+      event.preventDefault();
+      gestureScale = scale;
+    }
+
+    function onPointerDown(event) {
+      if (!stage || scale <= 1.01) return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      drag = { x: event.clientX, y: event.clientY, panX, panY, id: event.pointerId };
+      try {
+        stage.setPointerCapture(event.pointerId);
+      } catch (error) {}
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("pointercancel", onPointerUp);
+      event.preventDefault();
+    }
+
+    function onPointerMove(event) {
+      if (!drag || event.pointerId !== drag.id) return;
+      panX = drag.panX + (event.clientX - drag.x);
+      panY = drag.panY + (event.clientY - drag.y);
+      applyZoom();
+    }
+
+    function onPointerUp(event) {
+      if (!drag || (event && event.pointerId !== drag.id)) return;
+      drag = null;
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
     }
 
     function onTouchStart(event) {
       if (!stage || !event.changedTouches.length) return;
+      if (scale > 1.01) return;
       const touch = event.changedTouches[0];
       touchStart = { x: touch.clientX, y: touch.clientY };
     }
 
     function onTouchEnd(event) {
       if (!stage || !touchStart || !event.changedTouches.length) {
+        touchStart = null;
+        return;
+      }
+      if (scale > 1.01) {
         touchStart = null;
         return;
       }

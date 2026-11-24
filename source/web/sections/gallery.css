@@ -167,8 +167,18 @@
   height: auto;
   max-width: 100%;
   max-height: 100%;
+  transform-origin: center center;
+  will-change: transform;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+.photo-stage.is-zoomed {
+  cursor: grab;
+}
+
+.photo-stage.is-zoomed .photo-zone {
+  pointer-events: none;
 }
 
 .photo-zone {
