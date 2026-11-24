@@ -54,7 +54,10 @@
   }
 
   function findProject(list, id) {
-    return (list || []).find((item) => item.id === id) || null;
+    const needle = String(id || "").normalize("NFC");
+    return (
+      (list || []).find((item) => String(item.id || "").normalize("NFC") === needle) || null
+    );
   }
 
   function setActive(next) {

@@ -83,7 +83,9 @@ async function getCollectionDirs() {
   for (const root of THEME_ROOTS) {
     try {
       const entries = await fs.readdir(root.dir, { withFileTypes: true });
-      entries.filter((e) => e.isDirectory() && !e.name.startsWith(".")).forEach((e) => names.add(e.name));
+      entries
+        .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+        .forEach((e) => names.add(canon(e.name)));
     } catch {
       // theme folder may be missing
     }

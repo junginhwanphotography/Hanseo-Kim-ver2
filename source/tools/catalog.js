@@ -88,16 +88,17 @@ function listProjects(dir, urlPrefix, createdIndex) {
     .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
     .map((entry) => {
       const folder = path.join(dir, entry.name);
+      const id = canon(entry.name);
       const meta = readProjectText(folder);
       const record = storedRecord(createdIndex, entry.name);
       const created = record ? record.time : (meta && meta.created) || null;
       const images = listImages(folder).map(
-        (name) => `${urlPrefix}/${encodeURIComponent(entry.name)}/${encodeURIComponent(name)}`
+        (name) => `${urlPrefix}/${encodeURIComponent(id)}/${encodeURIComponent(name)}`
       );
       return {
-        id: entry.name,
+        id,
         year: (meta && meta.year) || (created ? String(new Date(created).getFullYear()) : ""),
-        title: (meta && meta.title) || entry.name,
+        title: (meta && meta.title) || id,
         text: (meta && meta.text) || "",
         created,
         order: record ? record.order : Number.MAX_SAFE_INTEGER,
