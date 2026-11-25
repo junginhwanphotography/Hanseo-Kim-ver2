@@ -1,0 +1,22 @@
+---
+description: Saved mobile-optimized layouts for 레이아웃 테스트5/6
+alwaysApply: true
+---
+
+# 모바일 최적화 레이아웃
+
+Name: **모바일 최적화 레이아웃**
+
+Saved (not active) mobile variants for:
+
+- **레이아웃 테스트5** — magnet wall: center-out scatter on a tall ellipse (vertical first, keep some L/R spread), denser pack, width-fit + scroll
+- **레이아웃 테스트6** — block collage: portrait jagged flush recipes, integer edge snapping so tiles do not overlap, airy silhouette like PC
+
+## Current behavior
+
+Tests 5 and 6 use the **same PC layout on mobile** (no separate mobile branch).
+
+## Restore
+
+Archived source: `source/web/sections/layout-mobile-opt-archive.js`  
+(not loaded by `index.html`). When the user asks to turn **모바일 최적화 레이아웃** back on, re-wire `layoutMagnetMobile` / `layoutBlockMobile` into `gallery.js` and call them when `width < 720` from `layoutMagnetWall` / `layoutBlockPack`.

@@ -65,8 +65,10 @@
     active = next;
   }
 
-  let pinUntil = 0;
+  const phoneQuery = window.matchMedia("(max-width: 720px)");
 
+  // Jump to top once on route change. Do not keep fighting the user's scroll —
+  // a long pin window felt like a brake on the first wheel/touch.
   function pinTop() {
     if (window.scrollY || document.documentElement.scrollTop || document.body.scrollTop) {
       window.scrollTo(0, 0);
@@ -75,49 +77,6 @@
     }
     if (site.scrollTop) site.scrollTop = 0;
   }
-
-  function holdTop() {
-    pinUntil = performance.now() + 1400;
-    pinTop();
-  }
-
-  window.addEventListener(
-    "scroll",
-    () => {
-      if (performance.now() < pinUntil) pinTop();
-    },
-    { passive: true }
-  );
-  const phoneQuery = window.matchMedia("(max-width: 720px)");
-  let listHold = true;
-  let listTouchY = 0;
-
-  site.addEventListener(
-    "touchstart",
-    (event) => {
-      if (event.touches[0]) listTouchY = event.touches[0].clientY;
-    },
-    { passive: true }
-  );
-  site.addEventListener(
-    "touchmove",
-    (event) => {
-      const touch = event.touches[0];
-      if (touch && Math.abs(touch.clientY - listTouchY) > 8) listHold = false;
-    },
-    { passive: true }
-  );
-  site.addEventListener(
-    "scroll",
-    () => {
-      if (phoneQuery.matches) {
-        if (listHold && site.scrollTop) site.scrollTop = 0;
-        return;
-      }
-      if (performance.now() < pinUntil && site.scrollTop) site.scrollTop = 0;
-    },
-    { passive: true }
-  );
 
   function setPaintDesk(on) {
     document.documentElement.classList.toggle("is-contact", on);
@@ -192,8 +151,7 @@
     const token = ++renderToken;
     const route = parseHash();
     document.documentElement.classList.add("is-inside");
-    listHold = true;
-    holdTop();
+    pinTop();
     setPaintDesk(route.name === "contact");
     site.removeAttribute("inert");
     site.setAttribute("aria-hidden", "false");
@@ -213,7 +171,7 @@
       return;
     }
     if (token !== renderToken) return;
-    holdTop();
+    pinTop();
     const sectionTitle = titles[route.name];
     const projects = route.name === "books" ? catalog.books || [] : catalog.recent || [];
 

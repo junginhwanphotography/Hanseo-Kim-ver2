@@ -254,8 +254,6 @@
       const article = mosaic.closest(".project");
       if (article) article.classList.add("is-magnet-wall");
 
-      // Collage recipes with jagged silhouette (not a filled rectangle).
-      // Units still edge-aligned; outer outline steps in and out.
       const recipes = {
         8: [
           [1, 0, 5, 3],
@@ -291,7 +289,6 @@
           [2, 5, 9, 2],
         ],
         11: [
-          // Stepped outline: missing corners, protruding wings.
           [1, 0, 5, 3],
           [6, 0, 3, 5],
           [9, 0, 4, 2],
@@ -340,15 +337,14 @@
       const n = items.length;
       let slots = recipes[n];
       if (!slots) {
-        // Fallback modular pack for other counts.
         const cols = 16;
         slots = [];
         let cursor = 0;
         let row = 0;
-        items.forEach((item, index) => {
+        items.forEach((item) => {
           const ratio = ratioOf(item);
-          let cw = ratio < 0.85 ? 5 : ratio > 1.2 ? 3 : 4;
-          let ch = ratio < 0.85 ? 3 : ratio > 1.2 ? 4 : 3;
+          const cw = ratio < 0.85 ? 5 : ratio > 1.2 ? 3 : 4;
+          const ch = ratio < 0.85 ? 3 : ratio > 1.2 ? 4 : 3;
           if (cursor + cw > cols) {
             cursor = 0;
             row += 3;
@@ -358,7 +354,6 @@
         });
       }
 
-      // Match photos to slots by aspect similarity (best first).
       const pool = items.map((item, index) => ({ item, index, ratio: ratioOf(item) }));
       const assigned = new Array(slots.length);
       const slotMeta = slots.map((s, i) => ({ i, x: s[0], y: s[1], w: s[2], h: s[3], ar: s[3] / s[2] }));
@@ -394,22 +389,22 @@
       const viewH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       const availH = Math.max(220, Math.floor(viewH - chrome));
       const pad = 18;
-      const unit = Math.min((width - pad * 2) / maxGX, (availH - pad * 2) / maxGY);
+      const unit = Math.floor(Math.min((width - pad * 2) / maxGX, (availH - pad * 2) / maxGY));
       const usedW = maxGX * unit;
       const usedH = maxGY * unit;
-      const offsetX = (width - usedW) / 2;
-      const offsetY = (availH - usedH) / 2;
+      const originX = Math.round((width - usedW) / 2);
+      const originY = Math.round((availH - usedH) / 2);
 
       slots.forEach((s, i) => {
         const photo = assigned[i];
         if (!photo) return;
-        const left = offsetX + s[0] * unit;
-        const top = offsetY + s[1] * unit;
-        const w = s[2] * unit;
-        const h = s[3] * unit;
+        const left = originX + s[0] * unit;
+        const top = originY + s[1] * unit;
+        const w = (s[0] + s[2]) * unit + originX - left;
+        const h = (s[1] + s[3]) * unit + originY - top;
         placeAt(photo.item, left, top, w, h);
         photo.item.el.style.zIndex = String(20 - i);
-        photo.item.el.classList.add("is-scatter", "is-magnet", "is-block");
+        photo.item.el.classList.add("is-magnet", "is-block");
       });
       mosaic.style.height = availH + "px";
     }
@@ -423,7 +418,6 @@
       const boardH = 900;
       const cx = boardW / 2;
       const cy = boardH / 2;
-      // Larger fracs for higher-priority (earlier) photos.
       const fracs = [0.3, 0.24, 0.22, 0.2, 0.19, 0.18, 0.17, 0.16, 0.15, 0.15, 0.14, 0.14];
       const rotPad = 5;
       const ringStepX = 30;
@@ -474,7 +468,6 @@
             const p = opts[o];
             if (!collides(p.left, p.top, itemW, itemH)) return p;
           }
-          // Horizontal-first scan from center; never allow overlap.
           for (let rad = 0; rad < boardW; rad += 4) {
             for (let dy = 0; dy <= rad; dy += 4) {
               for (const sy of dy === 0 ? [0] : [-1, 1]) {
@@ -749,8 +742,15 @@
       applyZoom();
     }
 
+    function wrapIndex(n) {
+      const len = images.length;
+      if (!len) return 0;
+      return ((n % len) + len) % len;
+    }
+
     function arm(next) {
-      [next - 1, next, next + 1].forEach((n) => {
+      [next - 1, next, next + 1].forEach((raw) => {
+        const n = wrapIndex(raw);
         const img = slides[n] && slides[n].querySelector("img");
         if (img && !img.getAttribute("src")) img.src = images[n];
       });
@@ -759,12 +759,13 @@
     function syncZones() {
       const prev = stage.querySelector(".photo-zone-prev");
       const next = stage.querySelector(".photo-zone-next");
-      prev.disabled = index <= 0;
-      next.disabled = index >= images.length - 1;
+      const alone = images.length <= 1;
+      prev.disabled = alone;
+      next.disabled = alone;
     }
 
     function show(nextIndex) {
-      index = nextIndex;
+      index = wrapIndex(nextIndex);
       resetZoom();
       syncZones();
       const token = ++showToken;
@@ -782,10 +783,8 @@
     function step(direction) {
       if (!stage || !images.length) return;
       if (busy) return;
-      const next = index + direction;
-      if (next < 0 || next >= images.length) return;
       busy = true;
-      show(next);
+      show(index + direction);
       window.setTimeout(() => {
         busy = false;
       }, STEP_LOCK_MS);

@@ -1,6 +1,5 @@
 (function () {
   function columnsFor(width) {
-    if (width < 680) return 1;
     if (width < 980) return 2;
     return 4;
   }
