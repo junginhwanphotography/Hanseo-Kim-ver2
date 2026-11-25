@@ -1,4 +1,14 @@
 (function () {
+  function makeBackLink(href, label) {
+    const link = document.createElement("a");
+    link.className = "section-back";
+    link.href = href;
+    link.setAttribute("aria-label", label || "Back");
+    link.innerHTML =
+      '<svg viewBox="0 0 56 36" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" d="M24 4 6 18 24 32M9 18h40"/></svg>';
+    return link;
+  }
+
   function openPrints(root, project) {
     const images = project.images || [];
     root.replaceChildren();
@@ -46,7 +56,7 @@
       dots.appendChild(button);
       return button;
     });
-    article.append(caption, frame, dots);
+    article.append(caption, frame, dots, makeBackLink("#books", "Back to books"));
     root.appendChild(article);
 
     let index = 0;
@@ -152,6 +162,9 @@
     });
     if (showLabel) article.append(label);
     article.append(mosaic);
+    if (project && project.id) {
+      article.append(makeBackLink("#photographs", "Back to photographs"));
+    }
     root.appendChild(article);
 
     let frame = 0;
@@ -168,7 +181,376 @@
       item.el.style.top = Math.round(top) + "px";
       item.el.style.width = Math.round(itemWidth) + "px";
       item.el.style.height = itemHeight + "px";
+      item.el.style.transform = "";
+      item.el.style.zIndex = "";
+      item.el.classList.remove("is-scatter", "is-magnet", "is-block");
       return itemHeight;
+    }
+
+    // Scattered wall collage: irregular sizes, slight tilt, tiny gaps, no overlap.
+    function layoutScatter(width) {
+      const gutter = 7;
+      const narrow = width < 720;
+      const fracs = narrow
+        ? [0.58, 0.4, 0.48, 0.36, 0.62, 0.44, 0.52, 0.38, 0.56, 0.42, 0.5]
+        : [0.38, 0.24, 0.3, 0.2, 0.42, 0.26, 0.34, 0.22, 0.46, 0.28, 0.32, 0.18];
+      const placed = [];
+      let maxBottom = 0;
+      const step = Math.max(6, gutter);
+
+      function collides(left, top, w, h) {
+        const right = left + w;
+        const bottom = top + h;
+        for (let i = 0; i < placed.length; i++) {
+          const p = placed[i];
+          if (
+            left < p.right + gutter &&
+            right + gutter > p.left &&
+            top < p.bottom + gutter &&
+            bottom + gutter > p.top
+          ) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      items.forEach((item, index) => {
+        let itemW = Math.round(width * fracs[index % fracs.length]);
+        itemW = Math.max(narrow ? 120 : 140, Math.min(width, itemW));
+        const itemH = Math.max(1, Math.round(ratioOf(item) * itemW));
+        const prefer = ((index * 97 + 41) % Math.max(1, width - itemW + 1));
+        let best = null;
+        const limit = Math.max(maxBottom + itemH + gutter * 4, itemH + 40);
+        for (let top = 0; top <= limit && !best; top += step) {
+          const order = [prefer];
+          for (let x = 0; x <= width - itemW; x += step) order.push(x);
+          const seen = {};
+          for (let o = 0; o < order.length; o++) {
+            const left = Math.max(0, Math.min(width - itemW, Math.round(order[o])));
+            if (seen[left]) continue;
+            seen[left] = 1;
+            if (!collides(left, top, itemW, itemH)) {
+              best = { left, top };
+              break;
+            }
+          }
+        }
+        if (!best) best = { left: 0, top: maxBottom + gutter };
+        placeAt(item, best.left, best.top, itemW);
+        const tilt = ((index % 7) - 3) * 1.15;
+        item.el.style.transform = "rotate(" + tilt + "deg)";
+        item.el.classList.add("is-scatter");
+        const right = best.left + itemW;
+        const bottom = best.top + itemH;
+        placed.push({ left: best.left, top: best.top, right, bottom });
+        if (bottom > maxBottom) maxBottom = bottom;
+      });
+      mosaic.style.height = Math.max(0, maxBottom + gutter + 16) + "px";
+    }
+
+    // Photographer magnet wall: modular tiles flush like the reference (레이아웃 테스트6).
+    function layoutBlockPack(width) {
+      const article = mosaic.closest(".project");
+      if (article) article.classList.add("is-magnet-wall");
+
+      // Collage recipes with jagged silhouette (not a filled rectangle).
+      // Units still edge-aligned; outer outline steps in and out.
+      const recipes = {
+        8: [
+          [1, 0, 5, 3],
+          [6, 0, 3, 4],
+          [9, 1, 4, 3],
+          [13, 0, 3, 2],
+          [0, 3, 3, 3],
+          [3, 3, 3, 2],
+          [9, 4, 3, 3],
+          [12, 2, 4, 3],
+        ],
+        9: [
+          [0, 1, 4, 3],
+          [4, 0, 5, 4],
+          [9, 0, 3, 2],
+          [12, 1, 4, 3],
+          [9, 2, 3, 3],
+          [1, 4, 3, 3],
+          [4, 4, 2, 2],
+          [6, 4, 3, 3],
+          [12, 4, 3, 2],
+        ],
+        10: [
+          [0, 0, 4, 3],
+          [4, 0, 3, 5],
+          [7, 0, 4, 2],
+          [11, 0, 3, 3],
+          [14, 1, 3, 3],
+          [7, 2, 4, 3],
+          [0, 3, 2, 3],
+          [2, 3, 2, 2],
+          [11, 3, 3, 2],
+          [2, 5, 9, 2],
+        ],
+        11: [
+          // Stepped outline: missing corners, protruding wings.
+          [1, 0, 5, 3],
+          [6, 0, 3, 5],
+          [9, 0, 4, 2],
+          [13, 1, 4, 3],
+          [9, 2, 4, 3],
+          [0, 3, 3, 3],
+          [3, 3, 3, 2],
+          [3, 5, 3, 2],
+          [6, 5, 3, 2],
+          [9, 5, 3, 3],
+          [12, 4, 4, 2],
+        ],
+        12: [
+          [0, 1, 4, 3],
+          [4, 0, 5, 4],
+          [9, 0, 3, 2],
+          [12, 0, 3, 3],
+          [15, 1, 3, 3],
+          [9, 2, 3, 3],
+          [12, 3, 3, 2],
+          [0, 4, 2, 3],
+          [2, 4, 2, 2],
+          [4, 4, 5, 2],
+          [9, 5, 3, 2],
+          [12, 5, 4, 3],
+        ],
+        15: [
+          [1, 0, 4, 3],
+          [5, 0, 3, 4],
+          [8, 0, 4, 2],
+          [12, 0, 3, 3],
+          [15, 1, 3, 3],
+          [8, 2, 2, 3],
+          [10, 2, 2, 2],
+          [12, 3, 3, 2],
+          [0, 3, 3, 3],
+          [3, 3, 2, 2],
+          [3, 5, 2, 2],
+          [5, 4, 3, 3],
+          [8, 5, 2, 2],
+          [10, 4, 2, 3],
+          [12, 5, 6, 2],
+        ],
+      };
+
+      const n = items.length;
+      let slots = recipes[n];
+      if (!slots) {
+        // Fallback modular pack for other counts.
+        const cols = 16;
+        slots = [];
+        let cursor = 0;
+        let row = 0;
+        items.forEach((item, index) => {
+          const ratio = ratioOf(item);
+          let cw = ratio < 0.85 ? 5 : ratio > 1.2 ? 3 : 4;
+          let ch = ratio < 0.85 ? 3 : ratio > 1.2 ? 4 : 3;
+          if (cursor + cw > cols) {
+            cursor = 0;
+            row += 3;
+          }
+          slots.push([cursor, row, cw, ch]);
+          cursor += cw;
+        });
+      }
+
+      // Match photos to slots by aspect similarity (best first).
+      const pool = items.map((item, index) => ({ item, index, ratio: ratioOf(item) }));
+      const assigned = new Array(slots.length);
+      const slotMeta = slots.map((s, i) => ({ i, x: s[0], y: s[1], w: s[2], h: s[3], ar: s[3] / s[2] }));
+      slotMeta.sort((a, b) => b.w * b.h - a.w * a.h);
+      slotMeta.forEach((slot) => {
+        let best = -1;
+        let bestScore = Infinity;
+        for (let p = 0; p < pool.length; p++) {
+          if (!pool[p]) continue;
+          const score = Math.abs(Math.log((pool[p].ratio || 1) / slot.ar));
+          if (score < bestScore) {
+            bestScore = score;
+            best = p;
+          }
+        }
+        assigned[slot.i] = pool[best];
+        pool[best] = null;
+      });
+
+      let maxGX = 0;
+      let maxGY = 0;
+      slots.forEach((s) => {
+        maxGX = Math.max(maxGX, s[0] + s[2]);
+        maxGY = Math.max(maxGY, s[1] + s[3]);
+      });
+
+      const label = article && article.querySelector(".project-label");
+      const back = article && article.querySelector(".section-back");
+      const chrome =
+        (label ? label.getBoundingClientRect().height + 20 : 8) +
+        (back ? back.getBoundingClientRect().height + 64 : 72) +
+        28;
+      const viewH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const availH = Math.max(220, Math.floor(viewH - chrome));
+      const pad = 18;
+      const unit = Math.min((width - pad * 2) / maxGX, (availH - pad * 2) / maxGY);
+      const usedW = maxGX * unit;
+      const usedH = maxGY * unit;
+      const offsetX = (width - usedW) / 2;
+      const offsetY = (availH - usedH) / 2;
+
+      slots.forEach((s, i) => {
+        const photo = assigned[i];
+        if (!photo) return;
+        const left = offsetX + s[0] * unit;
+        const top = offsetY + s[1] * unit;
+        const w = s[2] * unit;
+        const h = s[3] * unit;
+        placeAt(photo.item, left, top, w, h);
+        photo.item.el.style.zIndex = String(20 - i);
+        photo.item.el.classList.add("is-scatter", "is-magnet", "is-block");
+      });
+      mosaic.style.height = availH + "px";
+    }
+
+    // Magnet wall: higher priority (earlier in order) near center; no overlaps.
+    function layoutMagnetWall(width) {
+      const article = mosaic.closest(".project");
+      if (article) article.classList.add("is-magnet-wall");
+      const gutter = 5;
+      const boardW = 1600;
+      const boardH = 900;
+      const cx = boardW / 2;
+      const cy = boardH / 2;
+      // Larger fracs for higher-priority (earlier) photos.
+      const fracs = [0.3, 0.24, 0.22, 0.2, 0.19, 0.18, 0.17, 0.16, 0.15, 0.15, 0.14, 0.14];
+      const rotPad = 5;
+      const ringStepX = 30;
+      const ringStepY = 20;
+      const ringBaseX = 14;
+      const ringBaseY = 10;
+
+      function tryPack(sizeMul) {
+        const placed = [];
+        const boxes = [];
+
+        function collides(left, top, w, h) {
+          const aL = left - rotPad;
+          const aT = top - rotPad;
+          const aR = left + w + rotPad;
+          const aB = top + h + rotPad;
+          for (let i = 0; i < placed.length; i++) {
+            const p = placed[i];
+            if (aL < p.right + gutter && aR + gutter > p.left && aT < p.bottom + gutter && aB + gutter > p.top) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        function candidates(itemW, itemH, index) {
+          const points = [];
+          const angle0 = index * 2.15;
+          for (let ring = 0; ring <= 28; ring++) {
+            const rx = ring === 0 ? 0 : ringBaseX + ring * ringStepX;
+            const ry = ring === 0 ? 0 : ringBaseY + ring * ringStepY;
+            const count = ring === 0 ? 1 : 10 + ring * 4;
+            for (let i = 0; i < count; i++) {
+              const a = angle0 + (i / count) * Math.PI * 2 + ring * 0.28;
+              const x = Math.round(cx + Math.cos(a) * rx - itemW / 2);
+              const y = Math.round(cy + Math.sin(a) * ry - itemH / 2);
+              if (x < 0 || y < 0 || x + itemW > boardW || y + itemH > boardH) continue;
+              points.push({ left: x, top: y, ring, score: Math.abs(Math.sin(a)) });
+            }
+          }
+          points.sort((a, b) => a.ring - b.ring || a.score - b.score);
+          return points;
+        }
+
+        function findSpot(itemW, itemH, index) {
+          const opts = candidates(itemW, itemH, index);
+          for (let o = 0; o < opts.length; o++) {
+            const p = opts[o];
+            if (!collides(p.left, p.top, itemW, itemH)) return p;
+          }
+          // Horizontal-first scan from center; never allow overlap.
+          for (let rad = 0; rad < boardW; rad += 4) {
+            for (let dy = 0; dy <= rad; dy += 4) {
+              for (const sy of dy === 0 ? [0] : [-1, 1]) {
+                for (const sx of [-1, 1]) {
+                  const left = Math.round(cx + sx * rad - itemW / 2);
+                  const top = Math.round(cy + sy * dy - itemH / 2);
+                  if (left < 0 || top < 0 || left + itemW > boardW || top + itemH > boardH) continue;
+                  if (!collides(left, top, itemW, itemH)) return { left, top };
+                }
+              }
+            }
+          }
+          return null;
+        }
+
+        for (let index = 0; index < items.length; index++) {
+          const item = items[index];
+          let itemW = Math.round(boardW * fracs[Math.min(index, fracs.length - 1)] * sizeMul);
+          itemW = Math.max(80, Math.min(Math.round(boardW * 0.32 * sizeMul), itemW));
+          const itemH = Math.max(1, Math.round(ratioOf(item) * itemW));
+          const best = findSpot(itemW, itemH, index);
+          if (!best) return null;
+          placed.push({
+            left: best.left - rotPad,
+            top: best.top - rotPad,
+            right: best.left + itemW + rotPad,
+            bottom: best.top + itemH + rotPad,
+          });
+          boxes.push({ item, left: best.left, top: best.top, w: itemW, h: itemH, index });
+        }
+        return boxes;
+      }
+
+      let boxes = null;
+      for (let mul = 1; mul >= 0.4; mul -= 0.05) {
+        boxes = tryPack(mul);
+        if (boxes) break;
+      }
+      if (!boxes) boxes = tryPack(0.35) || [];
+
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = 0;
+      let maxY = 0;
+      boxes.forEach((box) => {
+        minX = Math.min(minX, box.left);
+        minY = Math.min(minY, box.top);
+        maxX = Math.max(maxX, box.left + box.w);
+        maxY = Math.max(maxY, box.top + box.h);
+      });
+      const clusterW = Math.max(1, maxX - minX);
+      const clusterH = Math.max(1, maxY - minY);
+
+      const label = article && article.querySelector(".project-label");
+      const back = article && article.querySelector(".section-back");
+      const chrome =
+        (label ? label.getBoundingClientRect().height + 20 : 8) +
+        (back ? back.getBoundingClientRect().height + 64 : 72) +
+        28;
+      const viewH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const availH = Math.max(220, Math.floor(viewH - chrome));
+      const pad = 14;
+      const scale = Math.min((width - pad * 2) / clusterW, (availH - pad * 2) / clusterH);
+      const usedW = clusterW * scale;
+      const usedH = clusterH * scale;
+      const offsetX = (width - usedW) / 2 - minX * scale;
+      const offsetY = (availH - usedH) / 2 - minY * scale;
+
+      boxes.forEach((box) => {
+        placeAt(box.item, offsetX + box.left * scale, offsetY + box.top * scale, box.w * scale);
+        const tilt = ((box.index % 7) - 3) * 0.55;
+        box.item.el.style.transform = "rotate(" + tilt + "deg)";
+        box.item.el.style.zIndex = String(items.length - box.index);
+        box.item.el.classList.add("is-scatter", "is-magnet");
+      });
+      mosaic.style.height = availH + "px";
     }
 
     function layoutMobile(width) {
@@ -262,7 +644,7 @@
       const width = mosaic.clientWidth;
       if (width < 20 || !items.length) return;
       const collectionId = String(project.id || "").normalize("NFC");
-      // 레이아웃 테스트1/2/3만 실험 레이아웃. 그 외·메인은 원래(모바일 1열 / PC 3열).
+      // 레이아웃 테스트1–5만 실험 레이아웃. 그 외·메인은 원래(모바일 1열 / PC 3열).
       if (collectionId === "레이아웃 테스트1") {
         if (width < 720) layoutMobile(width);
         else layoutDesktop(width, 3);
@@ -274,6 +656,18 @@
       }
       if (collectionId === "레이아웃 테스트3") {
         layoutDesktop(width, 3);
+        return;
+      }
+      if (collectionId === "레이아웃 테스트4") {
+        layoutScatter(width);
+        return;
+      }
+      if (collectionId === "레이아웃 테스트5") {
+        layoutMagnetWall(width);
+        return;
+      }
+      if (collectionId === "레이아웃 테스트6") {
+        layoutBlockPack(width);
         return;
       }
       layoutDesktop(width, width < 720 ? 1 : 3);

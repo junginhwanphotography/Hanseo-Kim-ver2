@@ -6,6 +6,18 @@
   min-height: 0;
 }
 
+.project.is-magnet-wall {
+  margin: 0;
+  padding: 12px 10px 0;
+  min-height: calc(var(--hanseo-vh, 100vh) - 56px);
+  background: #ffffff;
+}
+
+.project.is-magnet-wall .section-back {
+  margin-top: 18px;
+  margin-bottom: 18px;
+}
+
 .book-show {
   position: relative;
   width: min(1170px, calc(100% - 48px));
@@ -123,6 +135,28 @@
   line-height: 1.45;
 }
 
+.section-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  margin: 52px auto 28px;
+  padding: 8px;
+  color: #111111;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.section-back svg {
+  display: block;
+  width: 46px;
+  height: 30px;
+}
+
+.section-back:hover {
+  color: #565656;
+}
+
 .mosaic {
   position: relative;
   width: 100%;
@@ -136,10 +170,31 @@
   cursor: pointer;
 }
 
+.mosaic-item.is-scatter {
+  overflow: visible;
+  background: transparent;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  transform-origin: center center;
+}
+
+.mosaic-item.is-scatter img {
+  object-fit: cover;
+}
+
+.mosaic-item.is-magnet {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+
+.mosaic-item.is-block {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 8px 18px rgba(0, 0, 0, 0.14);
+}
+
 .photo-stage {
   position: fixed;
   inset: 0;
-  z-index: 6;
+  z-index: 1000;
   background: #ffffff;
   touch-action: none;
 }
@@ -151,6 +206,8 @@
   align-items: center;
   justify-content: center;
   margin: 0;
+  padding: 2.4vh 3.2vw;
+  box-sizing: border-box;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s ease;
@@ -167,6 +224,7 @@
   height: auto;
   max-width: 100%;
   max-height: 100%;
+  border-radius: 6px;
   transform-origin: center center;
   will-change: transform;
   user-select: none;
@@ -302,7 +360,7 @@ html.photo-open .site-nav {
   }
 
   .photo-stage {
-    z-index: 20;
+    z-index: 1000;
   }
 
   .photo-close {
@@ -331,10 +389,24 @@ html.photo-open .site-nav {
     color: #00ff41;
   }
 
+  html.is-dark .section-back {
+    color: #00ff41;
+  }
+
+  html.is-dark .section-back:hover {
+    color: #66ff99;
+  }
+
   html.is-dark .mosaic-item {
     background: #111111;
     cursor: url("../cursor-dark.png?v=2") 0 0, auto;
   }
+
+  html.is-dark .mosaic-item.is-scatter {
+    background: transparent;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+  }
+
 
   html.is-dark .photo-stage {
     background: #000000;

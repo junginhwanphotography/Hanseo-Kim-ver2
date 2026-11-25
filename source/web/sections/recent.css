@@ -1,6 +1,7 @@
 .recent-list {
   width: calc(100% - 12vw);
-  margin: 48px 0 88px 7vw;
+  /* Drop the list start to where paris to rome used to sit (≈2 rows lower). */
+  margin: calc(48px + 2 * (14px * 1.4 + 11px)) 0 88px 7vw;
   display: flex;
   flex-direction: column;
   gap: 11px;
@@ -94,7 +95,7 @@
 @media (max-width: 720px) {
   .recent-list {
     width: calc(100% - 36px);
-    margin: 56px 18px 64px;
+    margin: calc(56px + 1 * (14px * 1.4 + 11px)) 18px 64px;
   }
 
   .recent-row {

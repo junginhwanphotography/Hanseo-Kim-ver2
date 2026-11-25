@@ -46,6 +46,9 @@
         row.classList.add("is-spaced-top");
         sawLayoutTest = true;
       }
+      if (id === "레이아웃 테스트4") {
+        row.classList.add("is-spaced-top");
+      }
       row.href = "#photographs/" + encodeURIComponent(project.id);
       const title = document.createElement("span");
       title.className = "recent-title";
