@@ -213,6 +213,17 @@
         figure.classList.remove("is-pending");
         scheduleSoft();
       });
+      figure.addEventListener(
+        "pointerdown",
+        () => {
+          // Warm the full file while the tap is still landing.
+          const warm = new Image();
+          warm.decoding = "async";
+          warm.fetchPriority = "high";
+          warm.src = src;
+        },
+        { passive: true }
+      );
       figure.addEventListener("click", () => openViewer(photoIndex));
       figure.appendChild(img);
       mosaic.appendChild(figure);
@@ -895,6 +906,7 @@
       if (!stage) return;
       stage.classList.toggle("is-zoomed", scale > 1.01);
       slides.forEach((slide, n) => {
+        if (!slide) return;
         const img = slide.querySelector("img");
         if (!img) return;
         if (n === index) img.style.transform = "translate(" + panX + "px, " + panY + "px) scale(" + scale + ")";
@@ -936,11 +948,55 @@
       return ((n % len) + len) % len;
     }
 
+    function ensureSlide(n) {
+      n = wrapIndex(n);
+      if (slides[n]) return slides[n];
+      const figure = document.createElement("figure");
+      figure.className = "photo-slide";
+      const img = document.createElement("img");
+      img.alt = project.title || "";
+      img.decoding = "async";
+      img.dataset.src = images[n];
+      figure.appendChild(img);
+      const anchor = stage.querySelector(".photo-zone, .photo-close");
+      if (anchor) stage.insertBefore(figure, anchor);
+      else stage.appendChild(figure);
+      slides[n] = figure;
+      return figure;
+    }
+
+    function fillSlide(img, full, priority) {
+      if (!img || !full) return;
+      const thumb = thumbUrlFor(full) || full;
+      if (!img.getAttribute("src")) {
+        img.src = thumb;
+        img.dataset.phase = thumb === full ? "full" : "thumb";
+      }
+      if (img.dataset.phase === "full") return;
+      if (img.dataset.loadingFull === full) return;
+      img.dataset.loadingFull = full;
+      const hi = new Image();
+      hi.decoding = "async";
+      if (priority) hi.fetchPriority = priority;
+      hi.onload = () => {
+        if (!img.isConnected) return;
+        img.src = full;
+        img.dataset.phase = "full";
+      };
+      hi.onerror = () => {
+        if (!img.isConnected) return;
+        img.src = full;
+        img.dataset.phase = "full";
+      };
+      hi.src = full;
+    }
+
     function arm(next) {
       [next - 1, next, next + 1].forEach((raw) => {
         const n = wrapIndex(raw);
-        const img = slides[n] && slides[n].querySelector("img");
-        if (img && !img.getAttribute("src")) img.src = images[n];
+        const slide = ensureSlide(n);
+        const img = slide.querySelector("img");
+        fillSlide(img, images[n], raw === next ? "high" : "low");
       });
     }
 
@@ -956,16 +1012,14 @@
       index = wrapIndex(nextIndex);
       resetZoom();
       syncZones();
-      const token = ++showToken;
+      showToken += 1;
       arm(index);
-      const apply = () => {
-        if (token !== showToken || !stage) return;
-        slides.forEach((slide, n) => slide.classList.toggle("is-active", n === index));
-        applyZoom();
-      };
-      const img = slides[index].querySelector("img");
-      if (img.complete && img.naturalWidth) apply();
-      else img.addEventListener("load", apply, { once: true });
+      // Reveal immediately with the cached thumb; full file swaps in when ready.
+      slides.forEach((slide, n) => {
+        if (!slide) return;
+        slide.classList.toggle("is-active", n === index);
+      });
+      applyZoom();
     }
 
     function step(direction) {
@@ -1001,17 +1055,8 @@
       stage.className = "photo-stage";
       stage.setAttribute("role", "dialog");
       stage.setAttribute("aria-label", project.title || "Photograph");
-      slides = images.map((src) => {
-        const figure = document.createElement("figure");
-        figure.className = "photo-slide";
-        const img = document.createElement("img");
-        img.alt = project.title || "";
-        img.decoding = "async";
-        img.dataset.src = src;
-        figure.appendChild(img);
-        stage.appendChild(figure);
-        return figure;
-      });
+      // Build slides lazily — home can have 100+ photos.
+      slides = new Array(images.length);
       const zones = [
         ["photo-zone-prev", "Previous photograph"],
         ["photo-zone-zoom", "Zoom photograph"],
