@@ -143,7 +143,7 @@
     const file = parts[parts.length - 1];
     const stem = file.replace(/\.[^.]+$/, "");
     if (!collectionId || !stem) return "";
-    return "thumbs/" + collectionId + "/" + stem + ".jpg";
+    return "thumbs/" + collectionId + "/" + stem + ".webp?v=3";
   }
 
   function manifestKeyFor(src) {
@@ -192,9 +192,13 @@
       const display = thumb || src;
       img.dataset.full = src;
       img.dataset.display = display;
-      // Home: preload every mosaic thumb immediately (small files). Collections stay normal.
-      if (isScatterHome || photoIndex < 24) {
-        if (photoIndex < 24) img.fetchPriority = "high";
+      // Home: every thumb starts now. The first screen stays high priority.
+      if (isScatterHome) {
+        img.loading = "eager";
+        img.fetchPriority = photoIndex < 8 ? "high" : "auto";
+        img.src = display;
+      } else if (photoIndex < 12) {
+        if (photoIndex < 6) img.fetchPriority = "high";
         img.loading = "eager";
         img.src = display;
       } else {
@@ -739,34 +743,57 @@
       }, 32);
     }
 
+    function reveal(item, priority) {
+      if (!item || item.img.getAttribute("src")) return;
+      if (priority) item.img.fetchPriority = priority;
+      item.img.loading = priority === "high" ? "eager" : "lazy";
+      item.img.src = item.display;
+    }
+
     function armLazy() {
       const pending = items.filter((item) => !item.img.getAttribute("src"));
       if (!pending.length) return;
       if ("IntersectionObserver" in window) {
+        if (lazyObserver) lazyObserver.disconnect();
         lazyObserver = new IntersectionObserver(
           (entries) => {
             entries.forEach((entry) => {
               if (!entry.isIntersecting) return;
               const img = entry.target;
-              if (!img.getAttribute("src") && img.dataset.display) img.src = img.dataset.display;
+              const item = items.find((entryItem) => entryItem.img === img);
+              reveal(item, "low");
               lazyObserver.unobserve(img);
             });
           },
-          { root: null, rootMargin: "900px 0px", threshold: 0.01 }
+          { root: null, rootMargin: "640px 0px", threshold: 0.01 }
         );
         pending.forEach((item) => lazyObserver.observe(item.img));
       } else {
-        pending.forEach((item) => {
-          item.img.src = item.display;
-        });
+        pending.forEach((item) => reveal(item, "low"));
       }
+    }
+
+    function armHomeWaves() {
+      // Everything is already requested. IO only covers anything that failed to start.
+      armLazy();
+    }
+
+    function armAboveFold() {
+      if (!isScatterHome) {
+        armLazy();
+        return;
+      }
+      armHomeWaves();
     }
 
     const observer = new ResizeObserver(schedule);
     observer.observe(mosaic);
-    // Layout boxes immediately; refine as thumbs + manifest arrive.
-    schedule();
-    armLazy();
+    // Layout boxes first (from manifest ratios when ready), then top wave → rest.
+    function bootLayout() {
+      schedule();
+      requestAnimationFrame(() => armAboveFold());
+    }
+    bootLayout();
     loadThumbManifest().then((manifest) => {
       let touched = false;
       items.forEach((item) => {

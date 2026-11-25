@@ -59,14 +59,14 @@
       .filter(Boolean);
     if (parts.length < 3) return "";
     const stem = parts[parts.length - 1].replace(/\.[^.]+$/, "");
-    return stem ? "thumbs/" + parts[1] + "/" + stem + ".jpg" : "";
+    return stem ? "thumbs/" + parts[1] + "/" + stem + ".webp?v=3" : "";
   }
 
   function warmThumbs(urls) {
-    urls.forEach((url, index) => {
+    urls.slice(0, 15).forEach((url, index) => {
       if (!url) return;
       const img = new Image();
-      if (index < 20) img.fetchPriority = "high";
+      if (index < 8) img.fetchPriority = "high";
       img.decoding = "async";
       img.src = url;
     });

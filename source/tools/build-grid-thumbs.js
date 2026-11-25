@@ -7,9 +7,9 @@ const fs = require("fs");
 const path = require("path");
 const { WEB, RECENT_WHITE_DIR, RECENT_BLACK_DIR } = require("./paths");
 
-// Home mosaic cells are usually <400px wide — keep thumbs small for fast first paint.
-const THUMB_WIDTH = 420;
-const JPEG_QUALITY = 52;
+// WebP at 1200px covers retina mosaic cells and stays smaller than a JPEG of the same sharpness.
+const THUMB_WIDTH = 1200;
+const WEBP_QUALITY = 80;
 
 function nfc(value) {
   return String(value || "").normalize("NFC");
@@ -102,7 +102,7 @@ async function buildGridThumbs() {
     const destDir = path.join(outRoot, job.collectionId);
     fs.mkdirSync(destDir, { recursive: true });
     const stem = job.filename.replace(/\.[^.]+$/, "");
-    const dest = path.join(destDir, stem + ".jpg");
+    const dest = path.join(destDir, stem + ".webp");
     const srcStat = fs.statSync(job.src);
     const meta = await sharp(job.src).rotate().metadata();
     const width = meta.width || 0;
@@ -115,14 +115,87 @@ async function buildGridThumbs() {
     await sharp(job.src)
       .rotate()
       .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
-      .jpeg({ quality: JPEG_QUALITY, mozjpeg: true })
+      .webp({ quality: WEBP_QUALITY, effort: 4 })
       .toFile(dest);
     written += 1;
   });
 
   fs.writeFileSync(path.join(outRoot, "manifest.json"), JSON.stringify(manifest));
+  writeHomeBoot();
   console.log(`🖼 그리드 미리보기 ${written}장 생성, ${skipped}장 유지 (jobs ${jobs.length})`);
   return { written, skipped };
+}
+
+const HOME_PIN = ["레이아웃 테스트6", "레이아웃 테스트5", "레이아웃 테스트4"];
+
+function photosById(dir) {
+  const map = new Map();
+  if (!fs.existsSync(dir)) return map;
+  fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+    if (!entry.isDirectory()) return;
+    const id = nfc(entry.name);
+    if (isHiddenCollection(id)) return;
+    const files = fs
+      .readdirSync(path.join(dir, entry.name))
+      .filter((name) => isImage(name) && !isGalleryExcludedFile(name))
+      .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+    map.set(id, files);
+  });
+  return map;
+}
+
+function thumbUrl(id, filename) {
+  const stem = filename.replace(/\.[^.]+$/, "");
+  return "thumbs/" + id + "/" + stem + ".webp?v=3";
+}
+
+function homeUrls(theme, white, black, order) {
+  const urls = [];
+  order.forEach((id) => {
+    const light = white.get(id) || [];
+    const dark = black.get(id) || [];
+    let list = theme === "dark" ? dark : light;
+    if (!list.length && HOME_PIN.indexOf(id) !== -1) list = dark.length ? dark : light;
+    list.forEach((filename) => urls.push(thumbUrl(id, filename)));
+  });
+  return urls;
+}
+
+function writeHomeBoot() {
+  let cols = [];
+  try {
+    cols = JSON.parse(fs.readFileSync(path.join(WEB, "collections.json"), "utf8"));
+  } catch {
+    cols = [];
+  }
+  const rest = cols
+    .map((col) => nfc(col && col.id))
+    .filter((id) => id && id.charAt(0) !== "_" && HOME_PIN.indexOf(id) === -1);
+  const order = HOME_PIN.concat(rest);
+  const white = photosById(RECENT_WHITE_DIR);
+  const black = photosById(RECENT_BLACK_DIR);
+  const boot = {
+    light: homeUrls("light", white, black, order),
+    dark: homeUrls("dark", white, black, order),
+  };
+  fs.writeFileSync(path.join(WEB, "boot-thumbs.json"), JSON.stringify(boot));
+  patchHomePreload(boot);
+  console.log(`🚀 홈 선로딩 ${boot.light.length} / ${boot.dark.length}`);
+}
+
+function patchHomePreload(boot) {
+  const htmlPath = path.join(WEB, "index.html");
+  if (!fs.existsSync(htmlPath)) return;
+  const html = fs.readFileSync(htmlPath, "utf8");
+  const next = html.replace(
+    /var list = dark[\s\S]*?;/,
+    "var list = dark\n          ? " +
+      JSON.stringify(boot.dark.slice(0, 15)) +
+      "\n          : " +
+      JSON.stringify(boot.light.slice(0, 15)) +
+      ";"
+  );
+  if (next !== html) fs.writeFileSync(htmlPath, next);
 }
 
 if (require.main === module) {

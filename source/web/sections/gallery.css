@@ -335,7 +335,6 @@ html.photo-open .site-nav {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.16s ease;
   user-select: none;
   -webkit-user-drag: none;
 }
