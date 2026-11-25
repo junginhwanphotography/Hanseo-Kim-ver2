@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="sections/recent.css?v=20" />
     <link rel="stylesheet" href="sections/books.css?v=8" />
     <link rel="stylesheet" href="sections/contact.css?v=8" />
-    <link rel="stylesheet" href="sections/gallery.css?v=58" />
+    <link rel="stylesheet" href="sections/gallery.css?v=59" />
     <link rel="stylesheet" href="sections/paint.css?v=9" />
     <script>
       (function () {
@@ -53,6 +53,20 @@
         visualViewport.addEventListener("resize", fitPhoneFrame);
         visualViewport.addEventListener("scroll", fitPhoneFrame, { passive: true });
       }
+      // Kick catalog + thumb sizes before the section scripts parse.
+      window.__hanseoBoot = {
+        catalog: fetch("catalog.json").then(function (res) {
+          if (!res.ok) throw new Error("catalog");
+          return res.json();
+        }),
+        manifest: fetch("thumbs/manifest.json")
+          .then(function (res) {
+            return res.ok ? res.json() : {};
+          })
+          .catch(function () {
+            return {};
+          }),
+      };
     </script>
   </head>
   <body>
@@ -707,10 +721,10 @@
       sizeBoard();
       window.addEventListener("resize", sizeBoard);
     </script>
-    <script src="sections/gallery.js?v=77"></script>
-    <script src="sections/recent.js?v=6"></script>
+    <script src="sections/gallery.js?v=80"></script>
+    <script src="sections/recent.js?v=8"></script>
     <script src="sections/books.js?v=2"></script>
     <script src="sections/contact.js?v=4"></script>
-    <script src="sections/site.js?v=36"></script>
+    <script src="sections/site.js?v=39"></script>
   </body>
 </html>

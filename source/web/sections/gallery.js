@@ -133,10 +133,44 @@
     };
   }
 
+  function thumbUrlFor(src) {
+    const parts = String(src || "")
+      .normalize("NFC")
+      .split("/")
+      .filter(Boolean);
+    if (parts.length < 3) return "";
+    const collectionId = parts[1];
+    const file = parts[parts.length - 1];
+    const stem = file.replace(/\.[^.]+$/, "");
+    if (!collectionId || !stem) return "";
+    return "thumbs/" + collectionId + "/" + stem + ".jpg";
+  }
+
+  function manifestKeyFor(src) {
+    const parts = String(src || "")
+      .normalize("NFC")
+      .split("/")
+      .filter(Boolean);
+    if (parts.length < 3) return "";
+    return parts[1] + "/" + parts[parts.length - 1];
+  }
+
+  let thumbManifestPromise = null;
+  function loadThumbManifest() {
+    if (!thumbManifestPromise) {
+      const boot = window.__hanseoBoot && window.__hanseoBoot.manifest;
+      thumbManifestPromise = (boot || fetch("thumbs/manifest.json").then((res) => (res.ok ? res.json() : {}))).catch(
+        () => ({})
+      );
+    }
+    return thumbManifestPromise;
+  }
+
   function open(root, project, options) {
     if (options && options.layout === "prints") return openPrints(root, project);
     root.replaceChildren();
     const images = project.images || [];
+    const isScatterHome = options && options.layout === "scatter";
     const article = document.createElement("article");
     article.className = "project";
     const showLabel = !options || options.label !== false;
@@ -147,18 +181,38 @@
     label.append(document.createTextNode(project.year || ""));
     const mosaic = document.createElement("div");
     mosaic.className = "mosaic";
+    const ratioHints = Object.create(null);
     const items = images.map((src, photoIndex) => {
       const figure = document.createElement("figure");
-      figure.className = "mosaic-item";
+      figure.className = "mosaic-item is-pending";
       const img = document.createElement("img");
       img.alt = project.title || "";
       img.decoding = "async";
-      img.src = src;
-      img.addEventListener("load", layout);
+      const thumb = thumbUrlFor(src);
+      const display = thumb || src;
+      img.dataset.full = src;
+      img.dataset.display = display;
+      // Home: preload every mosaic thumb immediately (small files). Collections stay normal.
+      if (isScatterHome || photoIndex < 24) {
+        if (photoIndex < 24) img.fetchPriority = "high";
+        img.loading = "eager";
+        img.src = display;
+      } else {
+        img.loading = "lazy";
+      }
+      img.addEventListener("error", () => {
+        if (img.dataset.fellBack) return;
+        img.dataset.fellBack = "1";
+        if (img.src !== src) img.src = src;
+      });
+      img.addEventListener("load", () => {
+        figure.classList.remove("is-pending");
+        scheduleSoft();
+      });
       figure.addEventListener("click", () => openViewer(photoIndex));
       figure.appendChild(img);
       mosaic.appendChild(figure);
-      return { el: figure, img };
+      return { el: figure, img, src, display, key: manifestKeyFor(src) };
     });
     if (showLabel) article.append(label);
     article.append(mosaic);
@@ -168,7 +222,10 @@
     root.appendChild(article);
 
     let frame = 0;
+    let softTimer = 0;
+    let lazyObserver = null;
     function ratioOf(item) {
+      if (item.key && ratioHints[item.key]) return ratioHints[item.key];
       const nw = item.img.naturalWidth || 3;
       const nh = item.img.naturalHeight || 2;
       return nh / nw;
@@ -637,7 +694,13 @@
       const width = mosaic.clientWidth;
       if (width < 20 || !items.length) return;
       const collectionId = String(project.id || "").normalize("NFC");
-      // 레이아웃 테스트1–5만 실험 레이아웃. 그 외·메인은 원래(모바일 1열 / PC 3열).
+      const forced = options && options.layout;
+      // Home / explicit scatter uses the same layout as 레이아웃 테스트4.
+      if (forced === "scatter" || collectionId === "레이아웃 테스트4") {
+        layoutScatter(width);
+        return;
+      }
+      // 레이아웃 테스트1–6만 실험 레이아웃. 그 외는 원래(모바일 1열 / PC 3열).
       if (collectionId === "레이아웃 테스트1") {
         if (width < 720) layoutMobile(width);
         else layoutDesktop(width, 3);
@@ -649,10 +712,6 @@
       }
       if (collectionId === "레이아웃 테스트3") {
         layoutDesktop(width, 3);
-        return;
-      }
-      if (collectionId === "레이아웃 테스트4") {
-        layoutScatter(width);
         return;
       }
       if (collectionId === "레이아웃 테스트5") {
@@ -671,9 +730,53 @@
       frame = requestAnimationFrame(layout);
     }
 
+    // Batch reflows from image loads — per-load layout made the home mosaic crawl.
+    function scheduleSoft() {
+      if (softTimer) return;
+      softTimer = window.setTimeout(() => {
+        softTimer = 0;
+        schedule();
+      }, 32);
+    }
+
+    function armLazy() {
+      const pending = items.filter((item) => !item.img.getAttribute("src"));
+      if (!pending.length) return;
+      if ("IntersectionObserver" in window) {
+        lazyObserver = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              const img = entry.target;
+              if (!img.getAttribute("src") && img.dataset.display) img.src = img.dataset.display;
+              lazyObserver.unobserve(img);
+            });
+          },
+          { root: null, rootMargin: "900px 0px", threshold: 0.01 }
+        );
+        pending.forEach((item) => lazyObserver.observe(item.img));
+      } else {
+        pending.forEach((item) => {
+          item.img.src = item.display;
+        });
+      }
+    }
+
     const observer = new ResizeObserver(schedule);
     observer.observe(mosaic);
+    // Layout boxes immediately; refine as thumbs + manifest arrive.
     schedule();
+    armLazy();
+    loadThumbManifest().then((manifest) => {
+      let touched = false;
+      items.forEach((item) => {
+        const size = item.key && manifest[item.key];
+        if (!size || !size[0] || !size[1]) return;
+        ratioHints[item.key] = size[1] / size[0];
+        touched = true;
+      });
+      if (touched) schedule();
+    });
 
     let stage = null;
     let slides = [];
@@ -1019,6 +1122,8 @@
     return {
       destroy() {
         cancelAnimationFrame(frame);
+        if (softTimer) window.clearTimeout(softTimer);
+        if (lazyObserver) lazyObserver.disconnect();
         observer.disconnect();
         window.removeEventListener("keydown", onKey, true);
         window.removeEventListener("resize", placeStage);

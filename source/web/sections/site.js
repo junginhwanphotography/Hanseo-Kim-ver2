@@ -40,17 +40,36 @@
 
   function loadCatalog() {
     if (!catalogPromise) {
-      catalogPromise = fetch("catalog.json", { cache: "no-store" })
-        .then((res) => {
-          if (!res.ok) throw new Error("catalog");
-          return res.json();
-        })
-        .catch((error) => {
-          catalogPromise = null;
-          throw error;
-        });
+      const boot = window.__hanseoBoot && window.__hanseoBoot.catalog;
+      catalogPromise = (boot || fetch("catalog.json").then((res) => {
+        if (!res.ok) throw new Error("catalog");
+        return res.json();
+      })).catch((error) => {
+        catalogPromise = null;
+        throw error;
+      });
     }
     return catalogPromise;
+  }
+
+  function thumbUrlFor(src) {
+    const parts = String(src || "")
+      .normalize("NFC")
+      .split("/")
+      .filter(Boolean);
+    if (parts.length < 3) return "";
+    const stem = parts[parts.length - 1].replace(/\.[^.]+$/, "");
+    return stem ? "thumbs/" + parts[1] + "/" + stem + ".jpg" : "";
+  }
+
+  function warmThumbs(urls) {
+    urls.forEach((url, index) => {
+      if (!url) return;
+      const img = new Image();
+      if (index < 20) img.fetchPriority = "high";
+      img.decoding = "async";
+      img.src = url;
+    });
   }
 
   function findProject(list, id) {
@@ -133,18 +152,44 @@
   function openHomeMosaic(projects) {
     const dark = isDarkTheme();
     const root = dark ? "photographs_black/" : "photographs_white/";
+    // Pin layout tests 6→4 to the top of the home scatter; leave photographs menu order alone.
+    const pin = ["레이아웃 테스트6", "레이아웃 테스트5", "레이아웃 테스트4"];
+    const byId = new Map();
+    (projects || []).forEach((project) => {
+      byId.set(String(project.id || "").normalize("NFC"), project);
+    });
+    const ordered = [];
+    const seen = new Set();
+    pin.forEach((id) => {
+      const project = byId.get(id);
+      if (project) {
+        ordered.push(project);
+        seen.add(id);
+      }
+    });
+    (projects || []).forEach((project) => {
+      const id = String(project.id || "").normalize("NFC");
+      if (!seen.has(id)) ordered.push(project);
+    });
     const images = [];
-    projects.forEach((project) => {
+    ordered.forEach((project) => {
+      const id = String(project.id || "").normalize("NFC");
       const preferred = dark ? project.imagesBlack : project.imagesWhite;
-      const list =
+      let list =
         preferred && preferred.length
-          ? preferred
+          ? preferred.slice()
           : (project.images || []).filter((src) => String(src).indexOf(root) !== -1);
+      // Tests 4–6 live only under photographs_black — still show them on the home scatter.
+      if (!list.length && pin.indexOf(id) !== -1) {
+        list = (project.imagesBlack || project.images || []).slice();
+      }
       list.forEach((src) => {
-        if (String(src).indexOf(root) !== -1) images.push(src);
+        if (pin.indexOf(id) !== -1 || String(src).indexOf(root) !== -1) images.push(src);
       });
     });
-    return window.HanseoGallery.open(view, { title: "", images }, { layout: "mosaic", label: false });
+    // Prefetch mosaic thumbs into cache before/while the scatter mounts.
+    warmThumbs(images.map(thumbUrlFor).filter(Boolean));
+    return window.HanseoGallery.open(view, { title: "", images }, { layout: "scatter", label: false });
   }
 
   async function render() {

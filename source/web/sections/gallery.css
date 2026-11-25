@@ -177,6 +177,14 @@
   transform-origin: center center;
 }
 
+.mosaic-item.is-scatter.is-pending {
+  background: #ececec;
+}
+
+html.is-dark .mosaic-item.is-scatter.is-pending {
+  background: #111111;
+}
+
 .mosaic-item.is-scatter img {
   object-fit: cover;
 }
@@ -326,8 +334,14 @@ html.photo-open .site-nav {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.16s ease;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+.mosaic-item:not(.is-pending) img {
+  opacity: 1;
 }
 
 @media (max-width: 720px) {

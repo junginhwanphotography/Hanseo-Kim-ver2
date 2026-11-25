@@ -1,14 +1,19 @@
 /**
- * 그리드 스크롤용 미리보기를 web/thumbs 에 만듭니다.
- * 화면에는 칸 너비의 두 배 정도만 필요해서, 원본 대신 이 파일을 먼저 받습니다.
+ * 그리드/홈 모자이크용 미리보기를 web/thumbs 에 만듭니다.
+ * 원본 대신 이 파일을 먼저 받아 첫 화면을 빨리 그립니다.
  */
 
 const fs = require("fs");
 const path = require("path");
-const { WEB, COLLECTIONS_DIR } = require("./paths");
+const { WEB, RECENT_WHITE_DIR, RECENT_BLACK_DIR } = require("./paths");
 
-const THUMB_WIDTH = 1000;
-const JPEG_QUALITY = 68;
+// Home mosaic cells are usually <400px wide — keep thumbs small for fast first paint.
+const THUMB_WIDTH = 420;
+const JPEG_QUALITY = 52;
+
+function nfc(value) {
+  return String(value || "").normalize("NFC");
+}
 
 function loadSharp() {
   try {
@@ -22,8 +27,15 @@ function isHiddenCollection(id) {
   return String(id || "").replace(/^_/, "").toUpperCase() === "WALL";
 }
 
-function filenameOf(src) {
-  return String(src || "").split("/").pop();
+function isGalleryExcludedFile(name) {
+  const stem = String(name || "")
+    .replace(/\.[^.]+$/, "")
+    .toLowerCase();
+  return stem === "background" || stem === "bsckground" || stem.startsWith("bg-");
+}
+
+function isImage(name) {
+  return /\.(jpe?g|png|gif|webp)$/i.test(name || "");
 }
 
 async function mapPool(items, limit, worker) {
@@ -37,6 +49,41 @@ async function mapPool(items, limit, worker) {
   await Promise.all(runners);
 }
 
+function collectJobs() {
+  const roots = [
+    { dir: RECENT_WHITE_DIR },
+    { dir: RECENT_BLACK_DIR },
+  ];
+  const jobs = [];
+  const seen = new Set();
+
+  roots.forEach((root) => {
+    if (!fs.existsSync(root.dir)) return;
+    fs.readdirSync(root.dir, { withFileTypes: true }).forEach((entry) => {
+      if (!entry.isDirectory()) return;
+      const collectionId = nfc(entry.name);
+      if (isHiddenCollection(collectionId)) return;
+      const dir = path.join(root.dir, entry.name);
+      let files = [];
+      try {
+        files = fs.readdirSync(dir);
+      } catch {
+        return;
+      }
+      files.forEach((filename) => {
+        if (!isImage(filename) || filename === "images.json" || isGalleryExcludedFile(filename)) return;
+        const src = path.join(dir, filename);
+        const key = collectionId + "/" + filename;
+        if (seen.has(key)) return;
+        seen.add(key);
+        jobs.push({ collectionId, filename, src });
+      });
+    });
+  });
+
+  return jobs;
+}
+
 async function buildGridThumbs() {
   const sharp = loadSharp();
   if (!sharp) {
@@ -44,30 +91,10 @@ async function buildGridThumbs() {
     return { written: 0, skipped: 0 };
   }
 
-  const listPath = path.join(WEB, "collections.json");
-  const collections = JSON.parse(fs.readFileSync(listPath, "utf8"));
-  const manifest = {};
-  const jobs = [];
-
-  for (const collection of collections) {
-    if (!collection || !collection.id || isHiddenCollection(collection.id)) continue;
-    const jsonPath = path.join(COLLECTIONS_DIR, collection.id, "images.json");
-    if (!fs.existsSync(jsonPath)) continue;
-    const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
-    const images = Array.isArray(data) ? data : data.images || [];
-    for (const item of images) {
-      const filename = filenameOf(item && item.src);
-      if (!filename) continue;
-      const stem = filename.replace(/\.[^.]+$/, "").toLowerCase();
-      if (stem === "background" || stem === "bsckground" || stem.startsWith("bg-")) continue;
-      const src = path.join(COLLECTIONS_DIR, collection.id, filename);
-      if (!fs.existsSync(src)) continue;
-      jobs.push({ collectionId: collection.id, filename, src });
-    }
-  }
-
+  const jobs = collectJobs();
   const outRoot = path.join(WEB, "thumbs");
   fs.mkdirSync(outRoot, { recursive: true });
+  const manifest = {};
   let written = 0;
   let skipped = 0;
 
@@ -94,7 +121,7 @@ async function buildGridThumbs() {
   });
 
   fs.writeFileSync(path.join(outRoot, "manifest.json"), JSON.stringify(manifest));
-  console.log(`🖼 그리드 미리보기 ${written}장 생성, ${skipped}장 유지`);
+  console.log(`🖼 그리드 미리보기 ${written}장 생성, ${skipped}장 유지 (jobs ${jobs.length})`);
   return { written, skipped };
 }
 
