@@ -97,6 +97,35 @@
     if (site.scrollTop) site.scrollTop = 0;
   }
 
+  function readScroll() {
+    return {
+      window: window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0,
+      site: site.scrollTop || 0,
+    };
+  }
+
+  function applyScroll(pos) {
+    if (!pos) return;
+    if (pos.window) {
+      window.scrollTo(0, pos.window);
+      document.documentElement.scrollTop = pos.window;
+      document.body.scrollTop = pos.window;
+    }
+    if (pos.site) site.scrollTop = pos.site;
+  }
+
+  // Theme rebuild empties the mosaic briefly; restore after layout settles.
+  function keepScroll(pos) {
+    if (!pos || (!pos.window && !pos.site)) return;
+    applyScroll(pos);
+    requestAnimationFrame(() => {
+      applyScroll(pos);
+      requestAnimationFrame(() => applyScroll(pos));
+    });
+    window.setTimeout(() => applyScroll(pos), 40);
+    window.setTimeout(() => applyScroll(pos), 120);
+  }
+
   function setPaintDesk(on) {
     document.documentElement.classList.toggle("is-contact", on);
     if (!paintDesk) return;
@@ -192,11 +221,12 @@
     return window.HanseoGallery.open(view, { title: "", images }, { layout: "scatter", label: false });
   }
 
-  async function render() {
+  async function render(options) {
     const token = ++renderToken;
     const route = parseHash();
+    const stay = options && options.keepScroll;
     document.documentElement.classList.add("is-inside");
-    pinTop();
+    if (!stay) pinTop();
     setPaintDesk(route.name === "contact");
     site.removeAttribute("inert");
     site.setAttribute("aria-hidden", "false");
@@ -216,13 +246,14 @@
       return;
     }
     if (token !== renderToken) return;
-    pinTop();
+    if (!stay) pinTop();
     const sectionTitle = titles[route.name];
     const projects = route.name === "books" ? catalog.books || [] : catalog.recent || [];
 
     if (route.name === "home") {
       document.title = "Hanseo Kim";
       setActive(openHomeMosaic(catalog.recent || []));
+      if (stay) keepScroll(stay);
       return;
     }
 
@@ -359,12 +390,12 @@
     if (saved === "light" || saved === "dark") return;
     document.documentElement.classList.toggle("is-dark", colorScheme.matches);
     syncThemeToggle();
-    if (parseHash().name === "home") render();
+    if (parseHash().name === "home") render({ keepScroll: readScroll() });
   };
   if (colorScheme.addEventListener) colorScheme.addEventListener("change", onColorScheme);
   else if (colorScheme.addListener) colorScheme.addListener(onColorScheme);
   window.addEventListener("hanseo-theme", () => {
-    if (parseHash().name === "home") render();
+    if (parseHash().name === "home") render({ keepScroll: readScroll() });
   });
   let typed = "";
   let typeTimer = 0;

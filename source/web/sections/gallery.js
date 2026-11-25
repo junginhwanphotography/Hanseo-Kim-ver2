@@ -249,15 +249,20 @@
     }
 
     // Scattered wall collage: irregular sizes, slight tilt, tiny gaps, no overlap.
+    // Mobile sizes follow the 레이아웃 테스트4 phone reference (2–3 across, print-table denseness).
+    // Desktop sizes stay as-is. Home mobile gets seeded size/lean/tilt jitter.
     function layoutScatter(width) {
-      const gutter = 7;
       const narrow = width < 720;
+      const homeMobile = narrow && isScatterHome;
+      const padX = narrow ? 10 : 0;
+      const boardW = Math.max(160, width - padX * 2);
+      const gutter = narrow ? 8 : 7;
       const fracs = narrow
-        ? [0.58, 0.4, 0.48, 0.36, 0.62, 0.44, 0.52, 0.38, 0.56, 0.42, 0.5]
+        ? [0.48, 0.38, 0.42, 0.32, 0.5, 0.36, 0.44, 0.3, 0.46, 0.4, 0.34, 0.28]
         : [0.38, 0.24, 0.3, 0.2, 0.42, 0.26, 0.34, 0.22, 0.46, 0.28, 0.32, 0.18];
       const placed = [];
       let maxBottom = 0;
-      const step = Math.max(6, gutter);
+      const step = Math.max(narrow ? 5 : 6, gutter - (narrow ? 2 : 0));
 
       function collides(left, top, w, h) {
         const right = left + w;
@@ -276,31 +281,84 @@
         return false;
       }
 
+      function unitRand(seed) {
+        let t = (seed >>> 0) + 0x6d2b79f5;
+        t = Math.imul(t ^ (t >>> 15), 1 | t);
+        t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      }
+
+      function itemSeed(item, index) {
+        const key = String(item.src || item.key || index);
+        let h = 2166136261 ^ (index * 2654435761);
+        for (let i = 0; i < key.length; i++) {
+          h ^= key.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+      }
+
       items.forEach((item, index) => {
-        let itemW = Math.round(width * fracs[index % fracs.length]);
-        itemW = Math.max(narrow ? 120 : 140, Math.min(width, itemW));
+        const seed = itemSeed(item, index);
+        const r0 = unitRand(seed);
+        const r1 = unitRand(seed ^ 0x9e3779b9);
+        const r2 = unitRand(seed ^ 0x85ebca6b);
+        const r3 = unitRand(seed ^ 0xc2b2ae35);
+
+        let frac = fracs[index % fracs.length];
+        if (homeMobile) {
+          // Wider size spread so the home wall feels tossed, not paired.
+          frac = 0.26 + r0 * 0.28;
+        }
+        let itemW = Math.round(boardW * frac);
+        itemW = Math.max(narrow ? 108 : 140, Math.min(boardW, itemW));
         const itemH = Math.max(1, Math.round(ratioOf(item) * itemW));
-        const prefer = ((index * 97 + 41) % Math.max(1, width - itemW + 1));
+        const lean = homeMobile
+          ? 0.02 + r1 * 0.9
+          : index % 2 === 0
+            ? 0.06
+            : 0.58;
+        const prefer = Math.round(lean * Math.max(1, boardW - itemW));
+        const yJitter = homeMobile ? Math.round((r2 - 0.5) * 18) : 0;
         let best = null;
         const limit = Math.max(maxBottom + itemH + gutter * 4, itemH + 40);
         for (let top = 0; top <= limit && !best; top += step) {
           const order = [prefer];
-          for (let x = 0; x <= width - itemW; x += step) order.push(x);
+          // Tuck beside neighbors first so the collage fills sideways.
+          for (let i = 0; i < placed.length; i++) {
+            const p = placed[i];
+            order.push(p.right + gutter);
+            order.push(p.left - gutter - itemW);
+          }
+          for (let x = 0; x <= boardW - itemW; x += step) order.push(x);
+          if (homeMobile && r3 > 0.45) {
+            // Occasional reverse scan so packs don't always fill left→right.
+            order.reverse();
+            order.unshift(prefer);
+          }
           const seen = {};
           for (let o = 0; o < order.length; o++) {
-            const left = Math.max(0, Math.min(width - itemW, Math.round(order[o])));
+            const left = Math.max(0, Math.min(boardW - itemW, Math.round(order[o])));
             if (seen[left]) continue;
             seen[left] = 1;
-            if (!collides(left, top, itemW, itemH)) {
+            const tryTop = Math.max(0, top + (top === 0 ? 0 : yJitter));
+            if (!collides(left, tryTop, itemW, itemH)) {
+              best = { left, top: tryTop };
+              break;
+            }
+            if (yJitter && !collides(left, top, itemW, itemH)) {
               best = { left, top };
               break;
             }
           }
         }
         if (!best) best = { left: 0, top: maxBottom + gutter };
-        placeAt(item, best.left, best.top, itemW);
-        const tilt = ((index % 7) - 3) * 1.15;
-        item.el.style.transform = "rotate(" + tilt + "deg)";
+        const absLeft = best.left + padX;
+        placeAt(item, absLeft, best.top, itemW);
+        const tilt = homeMobile
+          ? (r0 * 7.2 - 3.6) + (r3 * 1.4 - 0.7)
+          : ((index % 7) - 3) * (narrow ? 1.05 : 1.15);
+        item.el.style.transform = "rotate(" + tilt.toFixed(2) + "deg)";
         item.el.classList.add("is-scatter");
         const right = best.left + itemW;
         const bottom = best.top + itemH;
