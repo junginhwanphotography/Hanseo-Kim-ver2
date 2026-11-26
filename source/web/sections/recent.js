@@ -57,10 +57,18 @@
       text.className = "recent-text";
       text.textContent = project.text || "";
       row.append(title, text);
+      const dark = document.documentElement.classList.contains("is-dark");
+      const themed =
+        (dark ? project.imagesDark : project.imagesLight) ||
+        project.images ||
+        [];
+      const fallback = project.images || [];
+      const coverPool = themed.length ? themed : fallback;
       const thumb =
         window.HanseoTags && window.HanseoTags.coverFromImages
-          ? window.HanseoTags.coverFromImages(project.images)
-          : project.images && project.images[0];
+          ? window.HanseoTags.coverFromImages(coverPool) ||
+            window.HanseoTags.coverFromImages(fallback)
+          : coverPool[0] || (fallback && fallback[0]);
       if (thumb) {
         row.addEventListener("mouseenter", () => showPreview(thumb));
         row.addEventListener("mouseleave", hidePreview);

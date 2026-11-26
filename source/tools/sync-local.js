@@ -28,6 +28,7 @@ const {
   saveOptCache,
 } = require("./optimize-photos");
 const { buildAllWall } = require("./build-all-wall");
+const { buildGridThumbs } = require("./build-grid-thumbs");
 const { comparePhotoNames } = require("./photo-name");
 const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"];
 /** 맨 위에 간격을 두는 컬렉션: 폴더 이름이 이 문자로 시작 */
@@ -421,6 +422,13 @@ async function runSync() {
     if (wall && wall.changed) changed = true;
   } catch (err) {
     console.error("❌ 전체 사진 벽 생성 실패:", err.message);
+  }
+
+  try {
+    const thumbs = await buildGridThumbs();
+    if (thumbs && thumbs.written) changed = true;
+  } catch (err) {
+    console.error("❌ 그리드 썸네일 생성 실패:", err.message);
   }
 
   if (!changed) {

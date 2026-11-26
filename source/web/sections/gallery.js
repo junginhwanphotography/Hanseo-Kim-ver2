@@ -139,13 +139,20 @@
       .split("/")
       .filter(Boolean);
     if (parts.length < 3) return "";
-    const collectionId = parts[1];
-    const file = parts[parts.length - 1];
+    let collectionId = parts[1];
+    let file = parts[parts.length - 1];
+    try {
+      collectionId = decodeURIComponent(collectionId);
+      file = decodeURIComponent(file);
+    } catch (error) {
+      // Keep raw path segments when the URL is not encoded.
+    }
     const stem = file.replace(/\.[^.]+$/, "");
     if (!collectionId || !stem) return "";
-    // sm = mosaic tile, lg = lightbox
-    if (kind === "lg") return "thumbs/" + collectionId + "/" + stem + ".webp?v=5";
-    return "thumbs/" + collectionId + "/" + stem + ".sm.webp?v=5";
+    // sm = mosaic tile, lg = lightbox — encode so Korean folder names resolve.
+    const base = "thumbs/" + encodeURIComponent(collectionId) + "/" + encodeURIComponent(stem);
+    if (kind === "lg") return base + ".webp?v=5";
+    return base + ".sm.webp?v=5";
   }
 
   function manifestKeyFor(src) {
@@ -154,7 +161,15 @@
       .split("/")
       .filter(Boolean);
     if (parts.length < 3) return "";
-    return parts[1] + "/" + parts[parts.length - 1];
+    let collectionId = parts[1];
+    let file = parts[parts.length - 1];
+    try {
+      collectionId = decodeURIComponent(collectionId);
+      file = decodeURIComponent(file);
+    } catch (error) {
+      // Keep raw path segments when the URL is not encoded.
+    }
+    return collectionId + "/" + file;
   }
 
   let thumbManifestPromise = null;
