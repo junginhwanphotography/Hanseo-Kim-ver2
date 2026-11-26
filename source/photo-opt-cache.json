@@ -3650,5 +3650,37 @@
   "photographs_dark/테스트용 새거 2/thumbnail_11_sun.jpg": {
     "size": 1872884,
     "mtimeMs": 1795095919201.3647
+  },
+  "photographs_light/테스트 컬렉션/0601-07_abbaabrrl.jpg": {
+    "size": 1136944,
+    "mtimeMs": 1795095919236.0093
+  },
+  "photographs_light/테스트 컬렉션/0601-12_lux.jpg": {
+    "size": 1137008,
+    "mtimeMs": 1795095919238.1848
+  },
+  "photographs_light/테스트 컬렉션/0601-13_sex.jpg": {
+    "size": 1848604,
+    "mtimeMs": 1795095919239.8333
+  },
+  "photographs_light/테스트 컬렉션/0601-16.jpg": {
+    "size": 1927052,
+    "mtimeMs": 1795095919243.416
+  },
+  "photographs_light/테스트 컬렉션/0602-03.jpg": {
+    "size": 1798473,
+    "mtimeMs": 1795095919246.1384
+  },
+  "photographs_light/테스트 컬렉션/0602-04.jpg": {
+    "size": 2055252,
+    "mtimeMs": 1795095919247.6997
+  },
+  "photographs_light/테스트 컬렉션/0602-05_lux.jpg": {
+    "size": 1908997,
+    "mtimeMs": 1795095919249.557
+  },
+  "photographs_light/테스트 컬렉션/thumbnail_0601-15.jpg": {
+    "size": 965753,
+    "mtimeMs": 1795095919240.981
   }
 }

@@ -1,21 +1,12 @@
 [
   {
-    "id": "테스트용 새거 2",
-    "name": "테스트용 새거 2",
-    "path": "collection.html?collection=%ED%85%8C%EC%8A%A4%ED%8A%B8%EC%9A%A9%20%EC%83%88%EA%B1%B0%202",
+    "id": "테스트 컬렉션",
+    "name": "테스트 컬렉션",
+    "path": "collection.html?collection=%ED%85%8C%EC%8A%A4%ED%8A%B8%20%EC%BB%AC%EB%A0%89%EC%85%98",
     "photoOrder": "asc",
-    "createdAt": "2026-11-26T07:24:09.108Z",
+    "createdAt": "2026-11-26T07:43:25.207Z",
     "layout": "scatter",
-    "layoutSeed": 1608563815
-  },
-  {
-    "id": "테스트용 새거",
-    "name": "테스트용 새거",
-    "path": "collection.html?collection=%ED%85%8C%EC%8A%A4%ED%8A%B8%EC%9A%A9%20%EC%83%88%EA%B1%B0",
-    "photoOrder": "asc",
-    "createdAt": "2026-11-26T07:19:01.367Z",
-    "layout": "scatter",
-    "layoutSeed": 3971089126
+    "layoutSeed": 3189197948
   },
   {
     "id": "영월",
