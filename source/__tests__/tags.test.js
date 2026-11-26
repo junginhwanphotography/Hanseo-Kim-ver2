@@ -21,10 +21,24 @@ describe("사진 태그", () => {
     expect(tags.tagFromSrc("photographs/yeongwol/0601-13_sex.jpg")).toBe("sex");
     expect(tags.tagFromSrc("photographs/WALL/3-1_sun.jpg")).toBe("sun");
     expect(tags.tagFromSrc("photographs/folder/3_sun_sea.jpg")).toBe("sea");
+    expect(tags.tagFromSrc("photographs/folder/thumbnail_4_sex.jpg")).toBe("sex");
     expect(tags.tagFromSrc("photographs/folder/IMG_2044.jpg")).toBe("");
     expect(tags.tagFromSrc("photographs/WALL/3-1.jpg")).toBe("");
     expect(tags.tagFromSrc("photographs/folder/0601-07.jpg")).toBe("");
     expect(tags.tagFromSrc("photographs/folder/1.jpg")).toBe("");
+  });
+
+  it("thumbnail_ 접두사가 있으면 photographs 목록 썸네일로 쓴다", () => {
+    const images = [
+      "photographs_light/통신보안/1.jpg",
+      "photographs_light/통신보안/thumbnail_4_sex.jpg",
+      "photographs_light/통신보안/5.jpg",
+    ];
+    expect(tags.coverFromImages(images)).toBe("photographs_light/통신보안/thumbnail_4_sex.jpg");
+    expect(tags.coverFromImages(["photographs_light/통신보안/1.jpg"])).toBe(
+      "photographs_light/통신보안/1.jpg"
+    );
+    expect(tags.coverFromImages([])).toBe("");
   });
 
   it("읽힌 글씨를 태그 중 가장 비슷한 것으로 고른다", () => {

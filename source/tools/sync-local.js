@@ -11,15 +11,15 @@ const { generateSitemap } = require("./generate-sitemap.js");
 const {
   PROJECT: ROOT,
   WEB,
-  RECENT_WHITE_DIR,
-  RECENT_BLACK_DIR,
-  COLLECTIONS_URL_WHITE,
-  COLLECTIONS_URL_BLACK,
+  RECENT_LIGHT_DIR,
+  RECENT_DARK_DIR,
+  COLLECTIONS_URL_LIGHT,
+  COLLECTIONS_URL_DARK,
 } = require("./paths");
 
 const THEME_ROOTS = [
-  { dir: RECENT_WHITE_DIR, url: COLLECTIONS_URL_WHITE },
-  { dir: RECENT_BLACK_DIR, url: COLLECTIONS_URL_BLACK },
+  { dir: RECENT_LIGHT_DIR, url: COLLECTIONS_URL_LIGHT },
+  { dir: RECENT_DARK_DIR, url: COLLECTIONS_URL_DARK },
 ];
 const {
   optimizeCollectionPhotos,
@@ -28,6 +28,7 @@ const {
   saveOptCache,
 } = require("./optimize-photos");
 const { buildAllWall } = require("./build-all-wall");
+const { comparePhotoNames } = require("./photo-name");
 const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"];
 /** 맨 위에 간격을 두는 컬렉션: 폴더 이름이 이 문자로 시작 */
 const TOP_COLLECTION_PREFIX = "_";
@@ -170,7 +171,7 @@ async function getCollectionImageList(collectionId) {
       // missing theme copy
     }
   }
-  return [...names].sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  return [...names].sort(comparePhotoNames);
 }
 
 async function getCollectionJsonList(collectionId) {
@@ -191,7 +192,7 @@ async function getCollectionJsonList(collectionId) {
     }
   }
   if (!saw) return null;
-  return [...names].sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  return [...names].sort(comparePhotoNames);
 }
 
 /** images.json 안의 src가 모두 현재 폴더명(id)과 일치하는지 검사. 이름 변경 시 false */
@@ -219,7 +220,7 @@ function photoOrderForCollection() {
 
 function sortPhotoNames(names, order) {
   const copy = [...names];
-  copy.sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  copy.sort(comparePhotoNames);
   if (order !== "asc") copy.reverse();
   return copy;
 }

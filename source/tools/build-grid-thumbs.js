@@ -1,15 +1,22 @@
 /**
  * 그리드/홈 모자이크용 미리보기를 web/thumbs 에 만듭니다.
- * 원본 대신 이 파일을 먼저 받아 첫 화면을 빨리 그립니다.
+ * - .sm.webp : 모자이크용 (~800)
+ * - .webp    : 라이트박스용 (~1440)
+ * home.json 에 홈 목록 + 미리 계산된 스캐터 좌표를 넣습니다.
  */
 
 const fs = require("fs");
 const path = require("path");
-const { WEB, RECENT_WHITE_DIR, RECENT_BLACK_DIR } = require("./paths");
+const { WEB, RECENT_LIGHT_DIR, RECENT_DARK_DIR } = require("./paths");
+const { packScatter } = require("./scatter-pack");
+const { comparePhotoNames } = require("./photo-name");
 
-// WebP at 1200px covers retina mosaic cells and stays smaller than a JPEG of the same sharpness.
-const THUMB_WIDTH = 1200;
-const WEBP_QUALITY = 80;
+const MOSAIC_WIDTH = 800;
+const MOSAIC_QUALITY = 80;
+const LIGHTBOX_WIDTH = 1440;
+const LIGHTBOX_QUALITY = 86;
+const THUMB_VERSION = 5;
+const HOME_PIN = ["레이아웃 테스트6", "레이아웃 테스트5", "레이아웃 테스트4"];
 
 function nfc(value) {
   return String(value || "").normalize("NFC");
@@ -51,8 +58,8 @@ async function mapPool(items, limit, worker) {
 
 function collectJobs() {
   const roots = [
-    { dir: RECENT_WHITE_DIR },
-    { dir: RECENT_BLACK_DIR },
+    { dir: RECENT_LIGHT_DIR, theme: "light" },
+    { dir: RECENT_DARK_DIR, theme: "dark" },
   ];
   const jobs = [];
   const seen = new Set();
@@ -76,12 +83,22 @@ function collectJobs() {
         const key = collectionId + "/" + filename;
         if (seen.has(key)) return;
         seen.add(key);
-        jobs.push({ collectionId, filename, src });
+        jobs.push({ collectionId, filename, src, theme: root.theme });
       });
     });
   });
 
   return jobs;
+}
+
+async function writeVariant(sharp, src, dest, width, quality, srcMtime) {
+  if (fs.existsSync(dest) && fs.statSync(dest).mtimeMs >= srcMtime) return false;
+  await sharp(src)
+    .rotate()
+    .resize({ width, withoutEnlargement: true })
+    .webp({ quality, effort: 4 })
+    .toFile(dest);
+  return true;
 }
 
 async function buildGridThumbs() {
@@ -102,31 +119,24 @@ async function buildGridThumbs() {
     const destDir = path.join(outRoot, job.collectionId);
     fs.mkdirSync(destDir, { recursive: true });
     const stem = job.filename.replace(/\.[^.]+$/, "");
-    const dest = path.join(destDir, stem + ".webp");
+    const destLg = path.join(destDir, stem + ".webp");
+    const destSm = path.join(destDir, stem + ".sm.webp");
     const srcStat = fs.statSync(job.src);
     const meta = await sharp(job.src).rotate().metadata();
     const width = meta.width || 0;
     const height = meta.height || 0;
     manifest[job.collectionId + "/" + job.filename] = [width, height];
-    if (fs.existsSync(dest) && fs.statSync(dest).mtimeMs >= srcStat.mtimeMs) {
-      skipped += 1;
-      return;
-    }
-    await sharp(job.src)
-      .rotate()
-      .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
-      .webp({ quality: WEBP_QUALITY, effort: 4 })
-      .toFile(dest);
-    written += 1;
+    const wroteLg = await writeVariant(sharp, job.src, destLg, LIGHTBOX_WIDTH, LIGHTBOX_QUALITY, srcStat.mtimeMs);
+    const wroteSm = await writeVariant(sharp, job.src, destSm, MOSAIC_WIDTH, MOSAIC_QUALITY, srcStat.mtimeMs);
+    if (wroteLg || wroteSm) written += 1;
+    else skipped += 1;
   });
 
   fs.writeFileSync(path.join(outRoot, "manifest.json"), JSON.stringify(manifest));
-  writeHomeBoot();
-  console.log(`🖼 그리드 미리보기 ${written}장 생성, ${skipped}장 유지 (jobs ${jobs.length})`);
+  writeHomeIndex(manifest);
+  console.log(`🖼 그리드 미리보기 ${written}장 갱신, ${skipped}장 유지 (jobs ${jobs.length})`);
   return { written, skipped };
 }
-
-const HOME_PIN = ["레이아웃 테스트6", "레이아웃 테스트5", "레이아웃 테스트4"];
 
 function photosById(dir) {
   const map = new Map();
@@ -138,30 +148,19 @@ function photosById(dir) {
     const files = fs
       .readdirSync(path.join(dir, entry.name))
       .filter((name) => isImage(name) && !isGalleryExcludedFile(name))
-      .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+      .sort(comparePhotoNames);
     map.set(id, files);
   });
   return map;
 }
 
-function thumbUrl(id, filename) {
+function thumbUrl(id, filename, kind) {
   const stem = filename.replace(/\.[^.]+$/, "");
-  return "thumbs/" + id + "/" + stem + ".webp?v=3";
+  const file = kind === "sm" ? stem + ".sm.webp" : stem + ".webp";
+  return "thumbs/" + id + "/" + file + "?v=" + THUMB_VERSION;
 }
 
-function homeUrls(theme, white, black, order) {
-  const urls = [];
-  order.forEach((id) => {
-    const light = white.get(id) || [];
-    const dark = black.get(id) || [];
-    let list = theme === "dark" ? dark : light;
-    if (!list.length && HOME_PIN.indexOf(id) !== -1) list = dark.length ? dark : light;
-    list.forEach((filename) => urls.push(thumbUrl(id, filename)));
-  });
-  return urls;
-}
-
-function writeHomeBoot() {
+function collectionOrder() {
   let cols = [];
   try {
     cols = JSON.parse(fs.readFileSync(path.join(WEB, "collections.json"), "utf8"));
@@ -171,31 +170,82 @@ function writeHomeBoot() {
   const rest = cols
     .map((col) => nfc(col && col.id))
     .filter((id) => id && id.charAt(0) !== "_" && HOME_PIN.indexOf(id) === -1);
-  const order = HOME_PIN.concat(rest);
-  const white = photosById(RECENT_WHITE_DIR);
-  const black = photosById(RECENT_BLACK_DIR);
-  const boot = {
-    light: homeUrls("light", white, black, order),
-    dark: homeUrls("dark", white, black, order),
-  };
-  fs.writeFileSync(path.join(WEB, "boot-thumbs.json"), JSON.stringify(boot));
-  patchHomePreload(boot);
-  console.log(`🚀 홈 선로딩 ${boot.light.length} / ${boot.dark.length}`);
+  return HOME_PIN.concat(rest);
 }
 
-function patchHomePreload(boot) {
-  const htmlPath = path.join(WEB, "index.html");
-  if (!fs.existsSync(htmlPath)) return;
-  const html = fs.readFileSync(htmlPath, "utf8");
-  const next = html.replace(
-    /var list = dark[\s\S]*?;/,
-    "var list = dark\n          ? " +
-      JSON.stringify(boot.dark.slice(0, 15)) +
-      "\n          : " +
-      JSON.stringify(boot.light.slice(0, 15)) +
-      ";"
-  );
-  if (next !== html) fs.writeFileSync(htmlPath, next);
+function homeImagePaths(theme, lightMap, darkMap, order) {
+  const root = theme === "dark" ? "photographs_dark/" : "photographs_light/";
+  const paths = [];
+  order.forEach((id) => {
+    const light = lightMap.get(id) || [];
+    const dark = darkMap.get(id) || [];
+    let list = theme === "dark" ? dark : light;
+    let folder = root + id + "/";
+    if (!list.length && HOME_PIN.indexOf(id) !== -1) {
+      list = dark.length ? dark : light;
+      folder = "photographs_dark/" + id + "/";
+    }
+    list.forEach((filename) => paths.push(folder + filename));
+  });
+  return paths;
+}
+
+function layoutFor(paths, manifest, homeMobile, boardW) {
+  const items = paths.map((src) => {
+    const parts = src.split("/").filter(Boolean);
+    const key = parts[1] + "/" + parts[parts.length - 1];
+    const size = manifest[key];
+    const ratio = size && size[0] ? size[1] / size[0] : 2 / 3;
+    return { key, ratio };
+  });
+  const packed = packScatter(items, { boardW, homeMobile });
+  return {
+    boardW,
+    height: packed.height,
+    boxes: packed.boxes,
+  };
+}
+
+function writeHomeIndex(manifest) {
+  const order = collectionOrder();
+  const lightMap = photosById(RECENT_LIGHT_DIR);
+  const darkMap = photosById(RECENT_DARK_DIR);
+  const lightPaths = homeImagePaths("light", lightMap, darkMap, order);
+  const darkPaths = homeImagePaths("dark", lightMap, darkMap, order);
+
+  const home = {
+    light: {
+      images: lightPaths,
+      mosaic: lightPaths.map((src) => {
+        const parts = src.split("/").filter(Boolean);
+        return thumbUrl(parts[1], parts[parts.length - 1], "sm");
+      }),
+      layout: {
+        mobile: layoutFor(lightPaths, manifest, true, 370),
+        desktop: layoutFor(lightPaths, manifest, false, 1000),
+      },
+    },
+    dark: {
+      images: darkPaths,
+      mosaic: darkPaths.map((src) => {
+        const parts = src.split("/").filter(Boolean);
+        return thumbUrl(parts[1], parts[parts.length - 1], "sm");
+      }),
+      layout: {
+        mobile: layoutFor(darkPaths, manifest, true, 370),
+        desktop: layoutFor(darkPaths, manifest, false, 1000),
+      },
+    },
+  };
+
+  fs.writeFileSync(path.join(WEB, "home.json"), JSON.stringify(home));
+
+  const boot = {
+    light: home.light.mosaic.slice(0, 12),
+    dark: home.dark.mosaic.slice(0, 12),
+  };
+  fs.writeFileSync(path.join(WEB, "boot-thumbs.json"), JSON.stringify(boot));
+  console.log(`🚀 홈 인덱스 ${lightPaths.length} / ${darkPaths.length}`);
 }
 
 if (require.main === module) {

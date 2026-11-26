@@ -57,7 +57,10 @@
       text.className = "recent-text";
       text.textContent = project.text || "";
       row.append(title, text);
-      const thumb = project.images && project.images[0];
+      const thumb =
+        window.HanseoTags && window.HanseoTags.coverFromImages
+          ? window.HanseoTags.coverFromImages(project.images)
+          : project.images && project.images[0];
       if (thumb) {
         row.addEventListener("mouseenter", () => showPreview(thumb));
         row.addEventListener("mouseleave", hidePreview);

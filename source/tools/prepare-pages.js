@@ -8,12 +8,12 @@ const path = require("path");
 const {
   WEB,
   SITE_OUT,
-  RECENT_WHITE_DIR,
-  RECENT_BLACK_DIR,
+  RECENT_LIGHT_DIR,
+  RECENT_DARK_DIR,
   BOOKS_DIR,
   CONTACT_DIR,
-  COLLECTIONS_URL_WHITE,
-  COLLECTIONS_URL_BLACK,
+  COLLECTIONS_URL_LIGHT,
+  COLLECTIONS_URL_DARK,
 } = require("./paths");
 const { buildCatalog } = require("./catalog");
 const { buildGridThumbs } = require("./build-grid-thumbs");
@@ -26,8 +26,8 @@ async function preparePages() {
   fs.mkdirSync(dest, { recursive: true });
   fs.cpSync(WEB, dest, { recursive: true });
   const sections = [
-    [RECENT_WHITE_DIR, COLLECTIONS_URL_WHITE],
-    [RECENT_BLACK_DIR, COLLECTIONS_URL_BLACK],
+    [RECENT_LIGHT_DIR, COLLECTIONS_URL_LIGHT],
+    [RECENT_DARK_DIR, COLLECTIONS_URL_DARK],
     [BOOKS_DIR, "books-and-printed-work"],
     [CONTACT_DIR, "contact"],
   ];

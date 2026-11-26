@@ -133,7 +133,7 @@
     };
   }
 
-  function thumbUrlFor(src) {
+  function thumbUrlFor(src, kind) {
     const parts = String(src || "")
       .normalize("NFC")
       .split("/")
@@ -143,7 +143,9 @@
     const file = parts[parts.length - 1];
     const stem = file.replace(/\.[^.]+$/, "");
     if (!collectionId || !stem) return "";
-    return "thumbs/" + collectionId + "/" + stem + ".webp?v=3";
+    // sm = mosaic tile, lg = lightbox
+    if (kind === "lg") return "thumbs/" + collectionId + "/" + stem + ".webp?v=5";
+    return "thumbs/" + collectionId + "/" + stem + ".sm.webp?v=5";
   }
 
   function manifestKeyFor(src) {
@@ -188,46 +190,33 @@
       const img = document.createElement("img");
       img.alt = project.title || "";
       img.decoding = "async";
-      const thumb = thumbUrlFor(src);
-      const display = thumb || src;
+      const mosaicThumb = thumbUrlFor(src, "sm") || thumbUrlFor(src, "lg") || src;
+      const lightboxThumb = thumbUrlFor(src, "lg") || mosaicThumb;
+      const display = mosaicThumb;
+      const key = manifestKeyFor(src);
       img.dataset.full = src;
       img.dataset.display = display;
-      // Home: every thumb starts now. The first screen stays high priority.
-      if (isScatterHome) {
-        img.loading = "eager";
-        img.fetchPriority = photoIndex < 8 ? "high" : "auto";
-        img.src = display;
-      } else if (photoIndex < 12) {
-        if (photoIndex < 6) img.fetchPriority = "high";
-        img.loading = "eager";
-        img.src = display;
-      } else {
-        img.loading = "lazy";
-      }
+      // src is assigned after the first layout so lazy loading sees real positions.
       img.addEventListener("error", () => {
-        if (img.dataset.fellBack) return;
-        img.dataset.fellBack = "1";
+        if (img.dataset.fellBack === "2") return;
+        if (!img.dataset.fellBack) {
+          img.dataset.fellBack = "1";
+          if (lightboxThumb && img.src !== lightboxThumb) {
+            img.src = lightboxThumb;
+            return;
+          }
+        }
+        img.dataset.fellBack = "2";
         if (img.src !== src) img.src = src;
       });
       img.addEventListener("load", () => {
         figure.classList.remove("is-pending");
-        scheduleSoft();
+        if (!ratioHints[key]) scheduleSoft();
       });
-      figure.addEventListener(
-        "pointerdown",
-        () => {
-          // Warm the full file while the tap is still landing.
-          const warm = new Image();
-          warm.decoding = "async";
-          warm.fetchPriority = "high";
-          warm.src = src;
-        },
-        { passive: true }
-      );
       figure.addEventListener("click", () => openViewer(photoIndex));
       figure.appendChild(img);
       mosaic.appendChild(figure);
-      return { el: figure, img, src, display, key: manifestKeyFor(src) };
+      return { el: figure, img, src, display, lightbox: lightboxThumb, key };
     });
     if (showLabel) article.append(label);
     article.append(mosaic);
@@ -238,7 +227,10 @@
 
     let frame = 0;
     let softTimer = 0;
+    let stage = null;
+    let lastWidth = -1;
     let lazyObserver = null;
+    const homeLayout = isScatterHome && project.homeLayout ? project.homeLayout : null;
     function ratioOf(item) {
       if (item.key && ratioHints[item.key]) return ratioHints[item.key];
       const nw = item.img.naturalWidth || 3;
@@ -259,6 +251,28 @@
       return itemHeight;
     }
 
+    function applyHomeLayout(width) {
+      if (!homeLayout) return false;
+      const narrow = width < 720;
+      const pack = narrow ? homeLayout.mobile : homeLayout.desktop;
+      if (!pack || !pack.boxes || pack.boxes.length !== items.length || !pack.boardW) return false;
+      const padX = narrow ? 10 : 0;
+      const boardW = Math.max(160, width - padX * 2);
+      const scale = boardW / pack.boardW;
+      items.forEach((item, index) => {
+        const box = pack.boxes[index];
+        const itemW = Math.max(1, Math.round(box.width * scale));
+        const itemH = Math.max(1, Math.round(box.height * scale));
+        const left = Math.round(box.left * scale) + padX;
+        const top = Math.round(box.top * scale);
+        placeAt(item, left, top, itemW, itemH);
+        item.el.style.transform = "rotate(" + box.rotate + "deg)";
+        item.el.classList.add("is-scatter");
+      });
+      mosaic.style.height = Math.max(0, Math.round(pack.height * scale) + 16) + "px";
+      return true;
+    }
+
     // Scattered wall collage: irregular sizes, slight tilt, tiny gaps, no overlap.
     // Mobile sizes follow the 레이아웃 테스트4 phone reference (2–3 across, print-table denseness).
     // Desktop sizes stay as-is. Home mobile gets seeded size/lean/tilt jitter.
@@ -272,21 +286,43 @@
         ? [0.48, 0.38, 0.42, 0.32, 0.5, 0.36, 0.44, 0.3, 0.46, 0.4, 0.34, 0.28]
         : [0.38, 0.24, 0.3, 0.2, 0.42, 0.26, 0.34, 0.22, 0.46, 0.28, 0.32, 0.18];
       const placed = [];
+      const BAND = 128;
+      const bands = Object.create(null);
       let maxBottom = 0;
       const step = Math.max(narrow ? 5 : 6, gutter - (narrow ? 2 : 0));
+
+      function bandOf(y) {
+        return (y / BAND) | 0;
+      }
+
+      function addPlaced(box) {
+        placed.push(box);
+        const a = bandOf(box.top);
+        const b = bandOf(box.bottom);
+        for (let i = a; i <= b; i++) {
+          if (!bands[i]) bands[i] = [];
+          bands[i].push(box);
+        }
+      }
 
       function collides(left, top, w, h) {
         const right = left + w;
         const bottom = top + h;
-        for (let i = 0; i < placed.length; i++) {
-          const p = placed[i];
-          if (
-            left < p.right + gutter &&
-            right + gutter > p.left &&
-            top < p.bottom + gutter &&
-            bottom + gutter > p.top
-          ) {
-            return true;
+        const a = bandOf(Math.max(0, top - gutter));
+        const b = bandOf(bottom + gutter);
+        for (let i = a; i <= b; i++) {
+          const list = bands[i];
+          if (!list) continue;
+          for (let j = 0; j < list.length; j++) {
+            const p = list[j];
+            if (
+              left < p.right + gutter &&
+              right + gutter > p.left &&
+              top < p.bottom + gutter &&
+              bottom + gutter > p.top
+            ) {
+              return true;
+            }
           }
         }
         return false;
@@ -331,27 +367,36 @@
             : 0.58;
         const prefer = Math.round(lean * Math.max(1, boardW - itemW));
         const yJitter = homeMobile ? Math.round((r2 - 0.5) * 18) : 0;
+
+        // Build left candidates once per item (not once per top row).
+        const lefts = [];
+        const seenLeft = Object.create(null);
+        function pushLeft(x) {
+          const left = Math.max(0, Math.min(boardW - itemW, Math.round(x)));
+          if (seenLeft[left]) return;
+          seenLeft[left] = 1;
+          lefts.push(left);
+        }
+        pushLeft(prefer);
+        for (let i = 0; i < placed.length; i++) {
+          const p = placed[i];
+          pushLeft(p.right + gutter);
+          pushLeft(p.left - gutter - itemW);
+        }
+        for (let x = 0; x <= boardW - itemW; x += step) pushLeft(x);
+        if (homeMobile && r3 > 0.45 && lefts.length > 1) {
+          const head = lefts[0];
+          const rest = lefts.slice(1).reverse();
+          lefts.length = 0;
+          lefts.push(head);
+          for (let i = 0; i < rest.length; i++) lefts.push(rest[i]);
+        }
+
         let best = null;
         const limit = Math.max(maxBottom + itemH + gutter * 4, itemH + 40);
         for (let top = 0; top <= limit && !best; top += step) {
-          const order = [prefer];
-          // Tuck beside neighbors first so the collage fills sideways.
-          for (let i = 0; i < placed.length; i++) {
-            const p = placed[i];
-            order.push(p.right + gutter);
-            order.push(p.left - gutter - itemW);
-          }
-          for (let x = 0; x <= boardW - itemW; x += step) order.push(x);
-          if (homeMobile && r3 > 0.45) {
-            // Occasional reverse scan so packs don't always fill left→right.
-            order.reverse();
-            order.unshift(prefer);
-          }
-          const seen = {};
-          for (let o = 0; o < order.length; o++) {
-            const left = Math.max(0, Math.min(boardW - itemW, Math.round(order[o])));
-            if (seen[left]) continue;
-            seen[left] = 1;
+          for (let o = 0; o < lefts.length; o++) {
+            const left = lefts[o];
             const tryTop = Math.max(0, top + (top === 0 ? 0 : yJitter));
             if (!collides(left, tryTop, itemW, itemH)) {
               best = { left, top: tryTop };
@@ -373,7 +418,7 @@
         item.el.classList.add("is-scatter");
         const right = best.left + itemW;
         const bottom = best.top + itemH;
-        placed.push({ left: best.left, top: best.top, right, bottom });
+        addPlaced({ left: best.left, top: best.top, right, bottom });
         if (bottom > maxBottom) maxBottom = bottom;
       });
       mosaic.style.height = Math.max(0, maxBottom + gutter + 16) + "px";
@@ -770,7 +815,7 @@
       const forced = options && options.layout;
       // Home / explicit scatter uses the same layout as 레이아웃 테스트4.
       if (forced === "scatter" || collectionId === "레이아웃 테스트4") {
-        layoutScatter(width);
+        if (!applyHomeLayout(width)) layoutScatter(width);
         return;
       }
       // 레이아웃 테스트1–6만 실험 레이아웃. 그 외는 원래(모바일 1열 / PC 3열).
@@ -798,12 +843,17 @@
       layoutDesktop(width, width < 720 ? 1 : 3);
     }
 
-    function schedule() {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(layout);
+    function runLayout() {
+      layout();
+      lastWidth = mosaic.clientWidth;
     }
 
-    // Batch reflows from image loads — per-load layout made the home mosaic crawl.
+    function schedule() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(runLayout);
+    }
+
+    // Only for tiles whose ratio was unknown at first layout.
     function scheduleSoft() {
       if (softTimer) return;
       softTimer = window.setTimeout(() => {
@@ -812,72 +862,64 @@
       }, 32);
     }
 
-    function reveal(item, priority) {
-      if (!item || item.img.getAttribute("src")) return;
-      if (priority) item.img.fetchPriority = priority;
-      item.img.loading = priority === "high" ? "eager" : "lazy";
-      item.img.src = item.display;
-    }
-
-    function armLazy() {
-      const pending = items.filter((item) => !item.img.getAttribute("src"));
-      if (!pending.length) return;
-      if ("IntersectionObserver" in window) {
-        if (lazyObserver) lazyObserver.disconnect();
-        lazyObserver = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (!entry.isIntersecting) return;
-              const img = entry.target;
-              const item = items.find((entryItem) => entryItem.img === img);
-              reveal(item, "low");
-              lazyObserver.unobserve(img);
-            });
-          },
-          { root: null, rootMargin: "640px 0px", threshold: 0.01 }
-        );
-        pending.forEach((item) => lazyObserver.observe(item.img));
-      } else {
-        pending.forEach((item) => reveal(item, "low"));
-      }
-    }
-
-    function armHomeWaves() {
-      // Everything is already requested. IO only covers anything that failed to start.
-      armLazy();
-    }
-
-    function armAboveFold() {
-      if (!isScatterHome) {
-        armLazy();
+    function armViewport() {
+      if (lazyObserver) lazyObserver.disconnect();
+      items.forEach((item, index) => {
+        if (index >= 8) return;
+        item.img.loading = "eager";
+        if (index < 4) item.img.fetchPriority = "high";
+        if (!item.img.getAttribute("src")) item.img.src = item.display;
+      });
+      if (!("IntersectionObserver" in window)) {
+        items.forEach((item) => {
+          if (!item.img.getAttribute("src")) item.img.src = item.display;
+        });
         return;
       }
-      armHomeWaves();
+      lazyObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const item = items.find((entryItem) => entryItem.el === entry.target);
+            if (!item) return;
+            if (entry.isIntersecting) {
+              if (!item.img.getAttribute("src")) item.img.src = item.display;
+              return;
+            }
+            const rect = entry.boundingClientRect;
+            const far =
+              rect.bottom < -window.innerHeight || rect.top > window.innerHeight * 2.5;
+            if (far && item.img.getAttribute("src")) {
+              item.img.removeAttribute("src");
+              item.el.classList.add("is-pending");
+            }
+          });
+        },
+        { root: null, rootMargin: "1000px 0px", threshold: 0.01 }
+      );
+      items.forEach((item, index) => {
+        if (index >= 8) lazyObserver.observe(item.el);
+      });
     }
 
-    const observer = new ResizeObserver(schedule);
-    observer.observe(mosaic);
-    // Layout boxes first (from manifest ratios when ready), then top wave → rest.
-    function bootLayout() {
+    const observer = new ResizeObserver(() => {
+      if (mosaic.clientWidth === lastWidth) return;
       schedule();
-      requestAnimationFrame(() => armAboveFold());
-    }
-    bootLayout();
+    });
+    observer.observe(mosaic);
+
+    // Wait for size hints (already fetching in <head>), layout once, then load nearby thumbs.
     loadThumbManifest().then((manifest) => {
-      let touched = false;
       items.forEach((item) => {
         const size = item.key && manifest[item.key];
         if (!size || !size[0] || !size[1]) return;
         ratioHints[item.key] = size[1] / size[0];
-        touched = true;
       });
-      if (touched) schedule();
+      runLayout();
+      armViewport();
     });
 
-    let stage = null;
     let slides = [];
     let index = 0;
-    let showToken = 0;
     let busy = false;
     let touchStart = null;
     let ignoreClick = false;
@@ -888,10 +930,6 @@
     let gestureScale = 1;
     let drag = null;
     const STEP_LOCK_MS = 140;
-
-    function placeStage() {
-      if (!stage) return;
-    }
 
     function resetZoom() {
       scale = 1;
@@ -955,8 +993,12 @@
       figure.className = "photo-slide";
       const img = document.createElement("img");
       img.alt = project.title || "";
-      img.decoding = "async";
-      img.dataset.src = images[n];
+      const item = items[n];
+      img.src =
+        (item && item.lightbox) ||
+        thumbUrlFor(images[n], "lg") ||
+        (item && item.display) ||
+        images[n];
       figure.appendChild(img);
       const anchor = stage.querySelector(".photo-zone, .photo-close");
       if (anchor) stage.insertBefore(figure, anchor);
@@ -965,39 +1007,8 @@
       return figure;
     }
 
-    function fillSlide(img, full, priority) {
-      if (!img || !full) return;
-      const thumb = thumbUrlFor(full) || full;
-      if (!img.getAttribute("src")) {
-        img.src = thumb;
-        img.dataset.phase = thumb === full ? "full" : "thumb";
-      }
-      if (img.dataset.phase === "full") return;
-      if (img.dataset.loadingFull === full) return;
-      img.dataset.loadingFull = full;
-      const hi = new Image();
-      hi.decoding = "async";
-      if (priority) hi.fetchPriority = priority;
-      hi.onload = () => {
-        if (!img.isConnected) return;
-        img.src = full;
-        img.dataset.phase = "full";
-      };
-      hi.onerror = () => {
-        if (!img.isConnected) return;
-        img.src = full;
-        img.dataset.phase = "full";
-      };
-      hi.src = full;
-    }
-
     function arm(next) {
-      [next - 1, next, next + 1].forEach((raw) => {
-        const n = wrapIndex(raw);
-        const slide = ensureSlide(n);
-        const img = slide.querySelector("img");
-        fillSlide(img, images[n], raw === next ? "high" : "low");
-      });
+      [next - 1, next, next + 1].forEach((raw) => ensureSlide(wrapIndex(raw)));
     }
 
     function syncZones() {
@@ -1012,9 +1023,7 @@
       index = wrapIndex(nextIndex);
       resetZoom();
       syncZones();
-      showToken += 1;
       arm(index);
-      // Reveal immediately with the cached thumb; full file swaps in when ready.
       slides.forEach((slide, n) => {
         if (!slide) return;
         slide.classList.toggle("is-active", n === index);
@@ -1099,13 +1108,11 @@
       stage.addEventListener("gesturestart", onGestureStart, { passive: false });
       stage.addEventListener("gesturechange", onGestureChange, { passive: false });
       stage.addEventListener("gestureend", onGestureEnd, { passive: false });
-      const host = document.querySelector(".site") || document.body;
-      host.appendChild(stage);
+      document.body.appendChild(stage);
       document.documentElement.classList.add("photo-open");
       window.addEventListener("wheel", onWheel, { passive: false });
       window.addEventListener("touchstart", onTouchStart, { passive: true });
       window.addEventListener("touchend", onTouchEnd, { passive: true });
-      placeStage();
       show(nextIndex);
     }
 
@@ -1127,14 +1134,13 @@
 
     function onWheel(event) {
       if (!stage) return;
+      event.preventDefault();
       // Trackpad pinch arrives as ctrl + wheel.
       if (event.ctrlKey) {
-        event.preventDefault();
         setScale(scale * Math.exp(-event.deltaY * 0.012));
         return;
       }
       if (scale > 1.01) {
-        event.preventDefault();
         panX -= event.deltaX;
         panY -= event.deltaY;
         applyZoom();
@@ -1247,7 +1253,6 @@
     }
 
     window.addEventListener("keydown", onKey, true);
-    window.addEventListener("resize", placeStage);
 
     return {
       destroy() {
@@ -1256,7 +1261,6 @@
         if (lazyObserver) lazyObserver.disconnect();
         observer.disconnect();
         window.removeEventListener("keydown", onKey, true);
-        window.removeEventListener("resize", placeStage);
         window.clearTimeout(ignoreTimer);
         closeViewer();
       },

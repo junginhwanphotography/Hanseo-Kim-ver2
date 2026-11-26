@@ -2,6 +2,7 @@ const fs = require("fs").promises;
 const path = require("path");
 
 const { COLLECTIONS_DIR, COLLECTIONS_URL } = require("./paths");
+const { comparePhotoNames } = require("./photo-name");
 // 환경변수로 전달 시 # 등 특수문자가 Windows에서도 안전하게 전달됨
 const COLLECTION_NAME = process.env.COLLECTION_ID || process.argv[2];
 
@@ -54,7 +55,7 @@ async function main() {
         IMAGE_EXTENSIONS.includes(path.extname(name).toLowerCase())
       )
       .filter((name) => !isGalleryExcludedFile(name));
-    files.sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+    files.sort(comparePhotoNames);
     if (photoOrder !== "asc") files.reverse();
 
     const backgroundFile = entries

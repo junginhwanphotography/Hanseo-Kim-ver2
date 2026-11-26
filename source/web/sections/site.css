@@ -115,10 +115,6 @@ html.is-dark .theme-toggle-sun {
   opacity: 0.7;
 }
 
-html.photo-open .theme-toggle {
-  visibility: hidden;
-}
-
 .site-message {
   margin: 72px auto;
   width: min(640px, calc(100% - 48px));

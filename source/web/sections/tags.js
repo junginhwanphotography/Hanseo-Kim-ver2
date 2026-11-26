@@ -1,14 +1,40 @@
 (function () {
-  function tagFromSrc(src) {
+  function fileNameFromSrc(src) {
     let name = String(src || "").split("?")[0].split("/").pop() || "";
     try {
       name = decodeURIComponent(name);
     } catch (error) {
       // Keep the raw filename when the URL is not encoded.
     }
-    const stem = name.replace(/\.[^.]+$/i, "");
+    return name;
+  }
+
+  function stemFromName(name) {
+    return String(name || "").replace(/\.[^.]+$/i, "");
+  }
+
+  /** thumbnail_4_sex.jpg → cover for photographs/books lists; still photo 4 with tag sex */
+  function isThumbnailStem(stem) {
+    return /^thumbnail_/i.test(String(stem || ""));
+  }
+
+  function galleryStem(stem) {
+    return String(stem || "").replace(/^thumbnail_/i, "");
+  }
+
+  function tagFromSrc(src) {
+    const stem = galleryStem(stemFromName(fileNameFromSrc(src)));
     const match = stem.match(/_([A-Za-z]+)$/);
     return match ? match[1].toLowerCase() : "";
+  }
+
+  function coverFromImages(images) {
+    const list = images || [];
+    for (let i = 0; i < list.length; i += 1) {
+      const stem = stemFromName(fileNameFromSrc(list[i]));
+      if (isThumbnailStem(stem)) return list[i];
+    }
+    return list[0] || "";
   }
 
   const softPair = {
@@ -266,6 +292,7 @@
 
   window.HanseoTags = {
     tagFromSrc,
+    coverFromImages,
     matchWord,
     commandTag,
     scoreTag,

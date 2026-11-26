@@ -50,9 +50,9 @@ describe("HTTP 서버 기본 동작", () => {
       "WALL",
       "통신보안",
     ]);
-    expect(response.body.recent[0].images[0]).toMatch(/^photographs_(white|black)\//);
-    expect(response.body.recent[0].imagesWhite.length).toBeGreaterThan(0);
-    expect(response.body.recent[0].imagesBlack.length).toBeGreaterThan(0);
+    expect(response.body.recent[0].images[0]).toMatch(/^photographs_(light|dark)\//);
+    expect(response.body.recent[0].imagesLight.length).toBeGreaterThan(0);
+    expect(response.body.recent[0].imagesDark.length).toBeGreaterThan(0);
     const tagged = [];
     response.body.recent.forEach((item) => {
       item.images.forEach((src) => {

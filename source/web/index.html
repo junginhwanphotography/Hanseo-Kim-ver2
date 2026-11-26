@@ -3,56 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- home-preload -->
-    <script>
-      (function () {
-        var dark = false;
-        try {
-          var saved = localStorage.getItem("hanseo-theme");
-          dark =
-            saved === "dark" ||
-            (saved !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-        } catch (error) {}
-        var list = dark
-          ? ["thumbs/레이아웃 테스트6/IMG_0693.webp?v=3","thumbs/레이아웃 테스트6/IMG_1118.webp?v=3","thumbs/레이아웃 테스트6/IMG_1125.webp?v=3","thumbs/레이아웃 테스트6/IMG_1132.webp?v=3","thumbs/레이아웃 테스트6/IMG_7731.webp?v=3","thumbs/레이아웃 테스트6/IMG_8229.webp?v=3","thumbs/레이아웃 테스트6/IMG_8237.webp?v=3","thumbs/레이아웃 테스트6/IMG_8744.webp?v=3","thumbs/레이아웃 테스트6/IMG_9531.webp?v=3","thumbs/레이아웃 테스트6/IMG_9534.webp?v=3","thumbs/레이아웃 테스트6/IMG_9643.webp?v=3","thumbs/레이아웃 테스트5/IMG_0693.webp?v=3","thumbs/레이아웃 테스트5/IMG_1118.webp?v=3","thumbs/레이아웃 테스트5/IMG_1125.webp?v=3","thumbs/레이아웃 테스트5/IMG_1132.webp?v=3"]
-          : ["thumbs/레이아웃 테스트6/IMG_0693.webp?v=3","thumbs/레이아웃 테스트6/IMG_1118.webp?v=3","thumbs/레이아웃 테스트6/IMG_1125.webp?v=3","thumbs/레이아웃 테스트6/IMG_1132.webp?v=3","thumbs/레이아웃 테스트6/IMG_7731.webp?v=3","thumbs/레이아웃 테스트6/IMG_8229.webp?v=3","thumbs/레이아웃 테스트6/IMG_8237.webp?v=3","thumbs/레이아웃 테스트6/IMG_8744.webp?v=3","thumbs/레이아웃 테스트6/IMG_9531.webp?v=3","thumbs/레이아웃 테스트6/IMG_9534.webp?v=3","thumbs/레이아웃 테스트6/IMG_9643.webp?v=3","thumbs/레이아웃 테스트5/IMG_0693.webp?v=3","thumbs/레이아웃 테스트5/IMG_1118.webp?v=3","thumbs/레이아웃 테스트5/IMG_1125.webp?v=3","thumbs/레이아웃 테스트5/IMG_1132.webp?v=3"];
-        var hash = location.hash.replace(/^#/, "");
-        if (hash && hash !== "intro") return;
-        list.forEach(function (url, index) {
-          var link = document.createElement("link");
-          link.rel = "preload";
-          link.as = "image";
-          link.href = url;
-          if (index < 8) link.fetchPriority = "high";
-          document.head.appendChild(link);
-          var img = new Image();
-          img.decoding = "async";
-          img.fetchPriority = index < 8 ? "high" : "auto";
-          img.src = url;
-        });
-      })();
-    </script>
-    <!-- /home-preload -->
     <title>Hanseo Kim</title>
     <meta name="description" content="Hanseo Kim" />
-    <link rel="icon" href="data:," />
+    <link rel="icon" href="favicon.png?v=2" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,600;1,6..72,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,600;1,6..72,300&display=swap" rel="stylesheet" />
     </noscript>
-    <link rel="preload" href="sections/gallery.js?v=92" as="script" />
+    <link rel="preload" href="sections/gallery.js?v=97" as="script" />
     <link rel="preload" href="sections/recent.js?v=8" as="script" />
-    <link rel="preload" href="sections/books.js?v=2" as="script" />
+    <link rel="preload" href="sections/books.js?v=3" as="script" />
     <link rel="preload" href="sections/contact.js?v=4" as="script" />
-    <link rel="preload" href="sections/site.js?v=45" as="script" />
+    <link rel="preload" href="sections/site.js?v=47" as="script" />
     <link rel="stylesheet" href="hanseo.css?v=30" />
-    <link rel="stylesheet" href="sections/site.css?v=44" />
+    <link rel="stylesheet" href="sections/site.css?v=45" />
     <link rel="stylesheet" href="sections/recent.css?v=20" />
     <link rel="stylesheet" href="sections/books.css?v=8" />
     <link rel="stylesheet" href="sections/contact.css?v=8" />
-    <link rel="stylesheet" href="sections/gallery.css?v=60" />
+    <link rel="stylesheet" href="sections/gallery.css?v=63" />
     <link rel="stylesheet" href="sections/paint.css?v=9" />
     <script>
       (function () {
@@ -91,26 +61,19 @@
         visualViewport.addEventListener("resize", fitPhoneFrame);
         visualViewport.addEventListener("scroll", fitPhoneFrame, { passive: true });
       }
-      // Start every home thumb as soon as the tiny boot list arrives.
-      // First screen is high priority; the rest follow immediately at normal priority.
+      // Preload only the first screen of home thumbs.
       function hanseoStartThumbs(urls) {
         var hash = location.hash.replace(/^#/, "");
         if (hash && hash !== "intro") return;
         if (!urls || !urls.length || window.__hanseoThumbsStarted) return;
         window.__hanseoThumbsStarted = true;
-        urls.forEach(function (url, index) {
-          if (index < 15) {
-            var link = document.createElement("link");
-            link.rel = "preload";
-            link.as = "image";
-            link.href = url;
-            if (index < 8) link.fetchPriority = "high";
-            document.head.appendChild(link);
-          }
-          var img = new Image();
-          img.decoding = "async";
-          img.fetchPriority = index < 8 ? "high" : "auto";
-          img.src = url;
+        urls.slice(0, 12).forEach(function (url, index) {
+          var link = document.createElement("link");
+          link.rel = "preload";
+          link.as = "image";
+          link.href = url;
+          if (index < 8) link.fetchPriority = "high";
+          document.head.appendChild(link);
         });
       }
       var catalogPromise = fetch("catalog.json").then(function (res) {
@@ -129,6 +92,13 @@
         .catch(function () {});
       window.__hanseoBoot = {
         catalog: catalogPromise,
+        home: fetch("home.json")
+          .then(function (res) {
+            return res.ok ? res.json() : null;
+          })
+          .catch(function () {
+            return null;
+          }),
         manifest: fetch("thumbs/manifest.json")
           .then(function (res) {
             return res.ok ? res.json() : {};
@@ -791,10 +761,10 @@
       sizeBoard();
       window.addEventListener("resize", sizeBoard);
     </script>
-    <script defer src="sections/gallery.js?v=92"></script>
+    <script defer src="sections/gallery.js?v=97"></script>
     <script defer src="sections/recent.js?v=8"></script>
-    <script defer src="sections/books.js?v=2"></script>
+    <script defer src="sections/books.js?v=3"></script>
     <script defer src="sections/contact.js?v=4"></script>
-    <script defer src="sections/site.js?v=45"></script>
+    <script defer src="sections/site.js?v=47"></script>
   </body>
 </html>

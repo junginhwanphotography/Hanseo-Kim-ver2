@@ -22,7 +22,11 @@
       thumb.className = "book-thumb";
       thumb.href = "#books/" + encodeURIComponent(project.id);
       const img = document.createElement("img");
-      img.src = project.images[0];
+      const cover =
+        window.HanseoTags && window.HanseoTags.coverFromImages
+          ? window.HanseoTags.coverFromImages(project.images)
+          : project.images && project.images[0];
+      img.src = cover || "";
       img.alt = project.title || project.id;
       img.decoding = "async";
       thumb.appendChild(img);

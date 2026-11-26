@@ -1,14 +1,15 @@
 const fs = require("fs");
 const path = require("path");
 const {
-  RECENT_WHITE_DIR,
-  RECENT_BLACK_DIR,
+  RECENT_LIGHT_DIR,
+  RECENT_DARK_DIR,
   BOOKS_DIR,
   CONTACT_DIR,
   WEB,
-  COLLECTIONS_URL_WHITE,
-  COLLECTIONS_URL_BLACK,
+  COLLECTIONS_URL_LIGHT,
+  COLLECTIONS_URL_DARK,
 } = require("./paths");
+const { comparePhotoNames } = require("./photo-name");
 
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp"]);
 
@@ -50,7 +51,7 @@ function listImages(dir) {
     .readdirSync(dir, { withFileTypes: true })
     .filter((entry) => (entry.isFile() || entry.isSymbolicLink()) && isPicture(entry.name))
     .map((entry) => entry.name)
-    .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+    .sort(comparePhotoNames);
 }
 
 function canon(id) {
@@ -127,8 +128,8 @@ function fileNameOf(src) {
 }
 
 function mergeRecent(createdIndex) {
-  const white = listProjects(RECENT_WHITE_DIR, COLLECTIONS_URL_WHITE, createdIndex);
-  const black = listProjects(RECENT_BLACK_DIR, COLLECTIONS_URL_BLACK, createdIndex);
+  const light = listProjects(RECENT_LIGHT_DIR, COLLECTIONS_URL_LIGHT, createdIndex);
+  const dark = listProjects(RECENT_DARK_DIR, COLLECTIONS_URL_DARK, createdIndex);
   const byId = new Map();
 
   function take(list, theme) {
@@ -142,8 +143,8 @@ function mergeRecent(createdIndex) {
           text: project.text,
           created: project.created,
           order: project.order,
-          imagesWhite: [],
-          imagesBlack: [],
+          imagesLight: [],
+          imagesDark: [],
         };
         byId.set(project.id, item);
       } else {
@@ -153,18 +154,18 @@ function mergeRecent(createdIndex) {
         if (item.created == null && project.created != null) item.created = project.created;
         if (project.order < item.order) item.order = project.order;
       }
-      if (theme === "white") item.imagesWhite = project.images;
-      else item.imagesBlack = project.images;
+      if (theme === "light") item.imagesLight = project.images;
+      else item.imagesDark = project.images;
     });
   }
 
-  take(white, "white");
-  take(black, "black");
+  take(light, "light");
+  take(dark, "dark");
 
   return [...byId.values()]
     .map((project) => {
-      const images = [...project.imagesWhite, ...project.imagesBlack].sort((a, b) =>
-        fileNameOf(a).localeCompare(fileNameOf(b), "en", { numeric: true })
+      const images = [...project.imagesLight, ...project.imagesDark].sort((a, b) =>
+        comparePhotoNames(fileNameOf(a), fileNameOf(b))
       );
       return {
         id: project.id,
@@ -174,8 +175,8 @@ function mergeRecent(createdIndex) {
         created: project.created,
         order: project.order,
         images,
-        imagesWhite: project.imagesWhite,
-        imagesBlack: project.imagesBlack,
+        imagesLight: project.imagesLight,
+        imagesDark: project.imagesDark,
       };
     })
     .filter((project) => project.images.length)

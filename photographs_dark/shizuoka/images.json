@@ -1,0 +1,73 @@
+{
+  "background": "photographs_dark/shizuoka/background.gif",
+  "images": [
+    {
+      "src": "photographs_dark/shizuoka/1.jpg",
+      "alt": "1"
+    },
+    {
+      "src": "photographs_dark/shizuoka/2.jpg",
+      "alt": "2"
+    },
+    {
+      "src": "photographs_dark/shizuoka/3.jpg",
+      "alt": "3"
+    },
+    {
+      "src": "photographs_dark/shizuoka/4.jpg",
+      "alt": "4"
+    },
+    {
+      "src": "photographs_dark/shizuoka/5.jpg",
+      "alt": "5"
+    },
+    {
+      "src": "photographs_dark/shizuoka/6.jpg",
+      "alt": "6"
+    },
+    {
+      "src": "photographs_dark/shizuoka/7.jpg",
+      "alt": "7"
+    },
+    {
+      "src": "photographs_dark/shizuoka/8.jpg",
+      "alt": "8"
+    },
+    {
+      "src": "photographs_dark/shizuoka/9.jpg",
+      "alt": "9"
+    },
+    {
+      "src": "photographs_dark/shizuoka/10.jpg",
+      "alt": "10"
+    },
+    {
+      "src": "photographs_dark/shizuoka/11.jpg",
+      "alt": "11"
+    },
+    {
+      "src": "photographs_dark/shizuoka/12.jpg",
+      "alt": "12"
+    },
+    {
+      "src": "photographs_dark/shizuoka/13.jpg",
+      "alt": "13"
+    },
+    {
+      "src": "photographs_dark/shizuoka/14_sex.jpg",
+      "alt": "14_sex"
+    },
+    {
+      "src": "photographs_dark/shizuoka/15.jpg",
+      "alt": "15"
+    },
+    {
+      "src": "photographs_dark/shizuoka/16_sun.jpg",
+      "alt": "16_sun"
+    },
+    {
+      "src": "photographs_dark/shizuoka/17.jpg",
+      "alt": "17"
+    }
+  ]
+}
