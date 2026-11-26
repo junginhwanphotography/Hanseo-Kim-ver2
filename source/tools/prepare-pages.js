@@ -32,7 +32,24 @@ async function preparePages() {
     [CONTACT_DIR, "contact"],
   ];
   for (const [src, name] of sections) {
-    if (fs.existsSync(src)) fs.cpSync(src, path.join(dest, name), { recursive: true, dereference: true });
+    if (!fs.existsSync(src)) continue;
+    // Photo theme roots: copy each collection under an NFC folder name so GitHub Pages
+    // (Linux) matches catalog URLs. macOS APFS often hides NFD/NFC mismatches locally.
+    if (name === COLLECTIONS_URL_LIGHT || name === COLLECTIONS_URL_DARK) {
+      const outRoot = path.join(dest, name);
+      fs.mkdirSync(outRoot, { recursive: true });
+      fs.readdirSync(src, { withFileTypes: true }).forEach((entry) => {
+        const from = path.join(src, entry.name);
+        if (entry.isDirectory()) {
+          const id = String(entry.name).normalize("NFC");
+          fs.cpSync(from, path.join(outRoot, id), { recursive: true, dereference: true });
+          return;
+        }
+        if (entry.isFile()) fs.cpSync(from, path.join(outRoot, entry.name), { dereference: true });
+      });
+      continue;
+    }
+    fs.cpSync(src, path.join(dest, name), { recursive: true, dereference: true });
   }
   fs.writeFileSync(path.join(dest, "catalog.json"), JSON.stringify(buildCatalog()));
   console.log("📦 GitHub Pages 준비:", dest);

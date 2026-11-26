@@ -103,7 +103,40 @@ async function normalizeBackgroundFilename(dir) {
   }
 }
 
+/** macOS may store Hangul as NFD; catalog/Pages use NFC. Rename on disk when needed. */
+async function ensureNfcCollectionDirs() {
+  for (const root of THEME_ROOTS) {
+    let entries = [];
+    try {
+      entries = await fs.readdir(root.dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+      const nfc = canon(entry.name);
+      if (entry.name === nfc) continue;
+      const from = path.join(root.dir, entry.name);
+      const tmp = path.join(root.dir, `.__nfc__${Date.now()}`);
+      const to = path.join(root.dir, nfc);
+      try {
+        await fs.rename(from, tmp);
+        await fs.rename(tmp, to);
+        console.log(`🔤 폴더명 NFC 정규화: ${entry.name} → ${nfc}`);
+      } catch (err) {
+        try {
+          await fs.rename(tmp, from);
+        } catch {
+          // best effort restore
+        }
+        console.error(`❌ 폴더명 NFC 정규화 실패 (${entry.name}):`, err.message);
+      }
+    }
+  }
+}
+
 async function getCollectionDirs() {
+  await ensureNfcCollectionDirs();
   const names = new Set();
   for (const root of THEME_ROOTS) {
     try {
