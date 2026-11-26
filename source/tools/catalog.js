@@ -67,7 +67,14 @@ function readCreatedIndex() {
       if (!item || !item.id || !item.createdAt) return;
       const time = Date.parse(item.createdAt);
       if (Number.isNaN(time)) return;
-      const record = { time, order };
+      const layout = String(item.layout || "").trim();
+      const layoutSeed = Number(item.layoutSeed);
+      const record = {
+        time,
+        order,
+        layout: layout || "",
+        layoutSeed: Number.isFinite(layoutSeed) && layoutSeed > 0 ? layoutSeed >>> 0 : 0,
+      };
       index.set(item.id, record);
       index.set(canon(item.id), record);
     });
@@ -103,6 +110,8 @@ function listProjects(dir, urlPrefix, createdIndex) {
         text: (meta && meta.text) || "",
         created,
         order: record ? record.order : Number.MAX_SAFE_INTEGER,
+        layout: (record && record.layout) || "",
+        layoutSeed: (record && record.layoutSeed) || 0,
         images,
       };
     })
@@ -143,6 +152,8 @@ function mergeRecent(createdIndex) {
           text: project.text,
           created: project.created,
           order: project.order,
+          layout: project.layout || "",
+          layoutSeed: project.layoutSeed || 0,
           imagesLight: [],
           imagesDark: [],
         };
@@ -153,6 +164,8 @@ function mergeRecent(createdIndex) {
         if (!item.text && project.text) item.text = project.text;
         if (item.created == null && project.created != null) item.created = project.created;
         if (project.order < item.order) item.order = project.order;
+        if (!item.layout && project.layout) item.layout = project.layout;
+        if (!item.layoutSeed && project.layoutSeed) item.layoutSeed = project.layoutSeed;
       }
       if (theme === "light") item.imagesLight = project.images;
       else item.imagesDark = project.images;
@@ -174,6 +187,8 @@ function mergeRecent(createdIndex) {
         text: project.text,
         created: project.created,
         order: project.order,
+        layout: project.layout || "",
+        layoutSeed: project.layoutSeed || 0,
         images,
         imagesLight: project.imagesLight,
         imagesDark: project.imagesDark,
@@ -190,7 +205,11 @@ function mergeRecent(createdIndex) {
       if (aKnown && a.created !== b.created) return b.created - a.created;
       return a.order - b.order;
     })
-    .map(({ created, order, ...project }) => project);
+    .map(({ created, order, ...project }) => {
+      if (!project.layout) delete project.layout;
+      if (!project.layoutSeed) delete project.layoutSeed;
+      return project;
+    });
 }
 
 function rtfPlain(rtf) {

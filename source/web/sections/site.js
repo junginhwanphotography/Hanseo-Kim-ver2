@@ -287,7 +287,7 @@
       document.title = (project.title || project.id) + " – Hanseo Kim";
       setActive(
         window.HanseoGallery.open(view, project, {
-          layout: route.name === "books" ? "prints" : "mosaic",
+          layout: route.name === "books" ? "prints" : project.layout || "scatter",
           label: route.name === "books",
         })
       );

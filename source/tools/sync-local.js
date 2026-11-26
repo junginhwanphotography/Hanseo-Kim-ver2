@@ -32,6 +32,29 @@ const { comparePhotoNames } = require("./photo-name");
 const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"];
 /** 맨 위에 간격을 두는 컬렉션: 폴더 이름이 이 문자로 시작 */
 const TOP_COLLECTION_PREFIX = "_";
+/** Non-test collections always use the home scatter format. */
+const COLLECTION_LAYOUT = "scatter";
+
+function isLayoutTestCollection(id) {
+  return /^레이아웃 테스트[1-6]$/.test(canon(id));
+}
+
+/** Stable seed so each collection's scatter pack differs; set once, never re-roll on file edits. */
+function hashLayoutSeed(id, createdAt) {
+  const text = String(id || "") + "|" + String(createdAt || "");
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) || 1;
+}
+
+function readLayoutSeed(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return n >>> 0;
+}
 
 function isImage(name) {
   return IMAGE_EXT.includes(path.extname(name).toLowerCase());
@@ -324,25 +347,46 @@ async function runSync() {
   }
 
   // 한 번 기록한 createdAt만 순서를 정한다. 폴더 생성일·수정일·배포 시각은 쓰지 않는다.
-  const ordered = collectionDirs
-    .map((id) => {
-      const c = entryForFolder(byId, id, renameFrom);
-      const createdAt = (c && c.createdAt) || new Date().toISOString();
-      return {
-        ...c,
-        id,
-        name: (c && c.name) || id,
-        path: `collection.html?collection=${encodeURIComponent(id)}`,
-        photoOrder: photoOrderForCollection(c, newIds.has(id) && !renameFrom.has(id)),
-        createdAt,
-      };
-    })
-    .sort((a, b) => {
-      const aPrefix = a.id.startsWith(TOP_COLLECTION_PREFIX);
-      const bPrefix = b.id.startsWith(TOP_COLLECTION_PREFIX);
-      if (aPrefix !== bPrefix) return aPrefix ? -1 : 1;
-      return createdMsFromIso(b.createdAt) - createdMsFromIso(a.createdAt);
-    });
+  // Non-test collections always use home scatter; layoutSeed is set once and kept on file edits.
+  const ordered = [];
+  for (const id of collectionDirs) {
+    const c = entryForFolder(byId, id, renameFrom);
+    const createdAt = (c && c.createdAt) || new Date().toISOString();
+    const entry = {
+      ...c,
+      id,
+      name: (c && c.name) || id,
+      path: `collection.html?collection=${encodeURIComponent(id)}`,
+      photoOrder: photoOrderForCollection(c, newIds.has(id) && !renameFrom.has(id)),
+      createdAt,
+    };
+    if (isLayoutTestCollection(id)) {
+      delete entry.layout;
+      delete entry.layoutSeed;
+    } else {
+      entry.layout = COLLECTION_LAYOUT;
+      const keptSeed = readLayoutSeed(c && c.layoutSeed);
+      if (keptSeed) {
+        entry.layoutSeed = keptSeed;
+      } else {
+        entry.layoutSeed = hashLayoutSeed(id, createdAt);
+        changed = true;
+        console.log(`🧩 컬렉션 scatter 시드 배정: ${id} → ${entry.layoutSeed}`);
+      }
+      if (!c || c.layout !== COLLECTION_LAYOUT) {
+        changed = true;
+        console.log(`🧩 컬렉션 레이아웃: ${id} → ${COLLECTION_LAYOUT}`);
+      }
+    }
+    byId.set(id, entry);
+    ordered.push(entry);
+  }
+  ordered.sort((a, b) => {
+    const aPrefix = a.id.startsWith(TOP_COLLECTION_PREFIX);
+    const bPrefix = b.id.startsWith(TOP_COLLECTION_PREFIX);
+    if (aPrefix !== bPrefix) return aPrefix ? -1 : 1;
+    return createdMsFromIso(b.createdAt) - createdMsFromIso(a.createdAt);
+  });
   await saveCollectionsJson(ordered);
 
   // 모든 컬렉션의 images.json을 매번 재생성 (사진 추가/삭제/변경 반영)

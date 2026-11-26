@@ -84,9 +84,10 @@ function packScatter(items, options) {
     const r3 = unitRand(seed ^ 0xc2b2ae35);
 
     let frac = fracs[index % fracs.length];
-    if (homeMobile) frac = 0.26 + r0 * 0.28;
+    // Home mobile: larger tiles so fewer are on-screen while scrolling.
+    if (homeMobile) frac = 0.36 + r0 * 0.28;
     let itemW = Math.round(boardW * frac);
-    itemW = Math.max(homeMobile ? 108 : 140, Math.min(boardW, itemW));
+    itemW = Math.max(homeMobile ? 132 : 140, Math.min(boardW, itemW));
     const ratio = item.ratio > 0 ? item.ratio : 2 / 3;
     const itemH = Math.max(1, Math.round(ratio * itemW));
     const lean = homeMobile ? 0.02 + r1 * 0.9 : index % 2 === 0 ? 0.06 : 0.58;

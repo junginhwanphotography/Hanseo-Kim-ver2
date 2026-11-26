@@ -1,52 +1,84 @@
 [
   {
+    "id": "테스트용 새거 2",
+    "name": "테스트용 새거 2",
+    "path": "collection.html?collection=%ED%85%8C%EC%8A%A4%ED%8A%B8%EC%9A%A9%20%EC%83%88%EA%B1%B0%202",
+    "photoOrder": "asc",
+    "createdAt": "2026-11-26T07:24:09.108Z",
+    "layout": "scatter",
+    "layoutSeed": 1608563815
+  },
+  {
+    "id": "테스트용 새거",
+    "name": "테스트용 새거",
+    "path": "collection.html?collection=%ED%85%8C%EC%8A%A4%ED%8A%B8%EC%9A%A9%20%EC%83%88%EA%B1%B0",
+    "photoOrder": "asc",
+    "createdAt": "2026-11-26T07:19:01.367Z",
+    "layout": "scatter",
+    "layoutSeed": 3971089126
+  },
+  {
     "id": "영월",
     "name": "영월",
     "path": "collection.html?collection=%EC%98%81%EC%9B%94",
     "photoOrder": "asc",
-    "createdAt": "2026-11-17T08:45:02.672Z"
+    "createdAt": "2026-11-17T08:45:02.672Z",
+    "layout": "scatter",
+    "layoutSeed": 2670146110
   },
   {
     "id": "바닥을 기어다니며",
     "name": "바닥을 기어다니며",
     "path": "collection.html?collection=%EB%B0%94%EB%8B%A5%EC%9D%84%20%EA%B8%B0%EC%96%B4%EB%8B%A4%EB%8B%88%EB%A9%B0",
     "photoOrder": "asc",
-    "createdAt": "2026-11-17T07:03:41.762Z"
+    "createdAt": "2026-11-17T07:03:41.762Z",
+    "layout": "scatter",
+    "layoutSeed": 1105672848
   },
   {
     "id": "paris to rome",
     "name": "paris to rome",
     "path": "collection.html?collection=paris%20to%20rome",
     "photoOrder": "asc",
-    "createdAt": "2026-09-27T08:08:41.546Z"
+    "createdAt": "2026-09-27T08:08:41.546Z",
+    "layout": "scatter",
+    "layoutSeed": 1075922206
   },
   {
     "id": "Mt.Fuji to Tokyo with BAHNO 1",
     "name": "Mt.Fuji to Tokyo with BAHNO 1",
     "path": "collection.html?collection=Mt.Fuji%20to%20Tokyo%20with%20BAHNO%201",
     "photoOrder": "asc",
-    "createdAt": "2026-08-27T08:56:43.245Z"
+    "createdAt": "2026-08-27T08:56:43.245Z",
+    "layout": "scatter",
+    "layoutSeed": 2313800336
   },
   {
     "id": "shizuoka",
     "name": "shizuoka",
     "path": "collection.html?collection=shizuoka",
     "photoOrder": "asc",
-    "createdAt": "2026-08-24T06:12:10.318Z"
+    "createdAt": "2026-08-24T06:12:10.318Z",
+    "layout": "scatter",
+    "layoutSeed": 1626335483
   },
   {
     "id": "okinawa",
     "name": "okinawa",
     "path": "collection.html?collection=okinawa",
     "photoOrder": "asc",
-    "createdAt": "2026-08-23T13:24:40.447Z"
+    "createdAt": "2026-08-23T13:24:40.447Z",
+    "layout": "scatter",
+    "layoutSeed": 759108331
   },
   {
     "id": "통신보안",
     "name": "통신보안",
     "path": "collection.html?collection=%ED%86%B5%EC%8B%A0%EB%B3%B4%EC%95%88",
     "photoOrder": "asc",
-    "createdAt": "2026-03-04T07:16:04.000Z"
+    "createdAt": "2026-03-04T07:16:04.000Z",
+    "layout": "scatter",
+    "layoutSeed": 3914397447
   },
   {
     "id": "레이아웃 테스트1",

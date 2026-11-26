@@ -198,16 +198,17 @@
       img.dataset.display = display;
       // src is assigned after the first layout so lazy loading sees real positions.
       img.addEventListener("error", () => {
+        const current = img.getAttribute("src") || "";
         if (img.dataset.fellBack === "2") return;
         if (!img.dataset.fellBack) {
           img.dataset.fellBack = "1";
-          if (lightboxThumb && img.src !== lightboxThumb) {
+          if (lightboxThumb && current !== lightboxThumb) {
             img.src = lightboxThumb;
             return;
           }
         }
         img.dataset.fellBack = "2";
-        if (img.src !== src) img.src = src;
+        if (current !== src) img.src = src;
       });
       img.addEventListener("load", () => {
         figure.classList.remove("is-pending");
@@ -278,7 +279,9 @@
     // Desktop sizes stay as-is. Home mobile gets seeded size/lean/tilt jitter.
     function layoutScatter(width) {
       const narrow = width < 720;
-      const homeMobile = narrow && isScatterHome;
+      const collectionSeed = Number(project.layoutSeed) >>> 0;
+      // Same home collage rules; collectionSeed only shifts the pack so collections differ.
+      const homeMobile = narrow && (isScatterHome || collectionSeed > 0);
       const padX = narrow ? 10 : 0;
       const boardW = Math.max(160, width - padX * 2);
       const gutter = narrow ? 8 : 7;
@@ -337,7 +340,7 @@
 
       function itemSeed(item, index) {
         const key = String(item.src || item.key || index);
-        let h = 2166136261 ^ (index * 2654435761);
+        let h = 2166136261 ^ (index * 2654435761) ^ collectionSeed;
         for (let i = 0; i < key.length; i++) {
           h ^= key.charCodeAt(i);
           h = Math.imul(h, 16777619);
@@ -353,20 +356,24 @@
         const r3 = unitRand(seed ^ 0xc2b2ae35);
 
         let frac = fracs[index % fracs.length];
-        if (homeMobile) {
-          // Wider size spread so the home wall feels tossed, not paired.
+        if (isScatterHome && narrow) {
+          // Home mobile: larger tiles so fewer load in view while scrolling.
+          frac = 0.36 + r0 * 0.28;
+        } else if (homeMobile) {
           frac = 0.26 + r0 * 0.28;
+        } else if (collectionSeed) {
+          frac = fracs[Math.floor(r0 * fracs.length) % fracs.length];
         }
         let itemW = Math.round(boardW * frac);
-        itemW = Math.max(narrow ? 108 : 140, Math.min(boardW, itemW));
+        itemW = Math.max(narrow ? (isScatterHome ? 132 : 108) : 140, Math.min(boardW, itemW));
         const itemH = Math.max(1, Math.round(ratioOf(item) * itemW));
-        const lean = homeMobile
+        const lean = homeMobile || collectionSeed
           ? 0.02 + r1 * 0.9
           : index % 2 === 0
             ? 0.06
             : 0.58;
         const prefer = Math.round(lean * Math.max(1, boardW - itemW));
-        const yJitter = homeMobile ? Math.round((r2 - 0.5) * 18) : 0;
+        const yJitter = homeMobile ? Math.round((r2 - 0.5) * 18) : collectionSeed ? Math.round((r2 - 0.5) * 10) : 0;
 
         // Build left candidates once per item (not once per top row).
         const lefts = [];
@@ -384,7 +391,7 @@
           pushLeft(p.left - gutter - itemW);
         }
         for (let x = 0; x <= boardW - itemW; x += step) pushLeft(x);
-        if (homeMobile && r3 > 0.45 && lefts.length > 1) {
+        if ((homeMobile || collectionSeed) && r3 > 0.45 && lefts.length > 1) {
           const head = lefts[0];
           const rest = lefts.slice(1).reverse();
           lefts.length = 0;
@@ -411,7 +418,7 @@
         if (!best) best = { left: 0, top: maxBottom + gutter };
         const absLeft = best.left + padX;
         placeAt(item, absLeft, best.top, itemW);
-        const tilt = homeMobile
+        const tilt = homeMobile || collectionSeed
           ? (r0 * 7.2 - 3.6) + (r3 * 1.4 - 0.7)
           : ((index % 7) - 3) * (narrow ? 1.05 : 1.15);
         item.el.style.transform = "rotate(" + tilt.toFixed(2) + "deg)";
@@ -812,13 +819,7 @@
       const width = mosaic.clientWidth;
       if (width < 20 || !items.length) return;
       const collectionId = String(project.id || "").normalize("NFC");
-      const forced = options && options.layout;
-      // Home / explicit scatter uses the same layout as 레이아웃 테스트4.
-      if (forced === "scatter" || collectionId === "레이아웃 테스트4") {
-        if (!applyHomeLayout(width)) layoutScatter(width);
-        return;
-      }
-      // 레이아웃 테스트1–6만 실험 레이아웃. 그 외는 원래(모바일 1열 / PC 3열).
+      // 레이아웃 테스트1–6 keep their fixed experimental layouts.
       if (collectionId === "레이아웃 테스트1") {
         if (width < 720) layoutMobile(width);
         else layoutDesktop(width, 3);
@@ -832,6 +833,10 @@
         layoutDesktop(width, 3);
         return;
       }
+      if (collectionId === "레이아웃 테스트4") {
+        if (!applyHomeLayout(width)) layoutScatter(width);
+        return;
+      }
       if (collectionId === "레이아웃 테스트5") {
         layoutMagnetWall(width);
         return;
@@ -840,7 +845,8 @@
         layoutBlockPack(width);
         return;
       }
-      layoutDesktop(width, width < 720 ? 1 : 3);
+      // Home and all other collections use the home scatter format.
+      if (!applyHomeLayout(width)) layoutScatter(width);
     }
 
     function runLayout() {
@@ -864,16 +870,19 @@
 
     function armViewport() {
       if (lazyObserver) lazyObserver.disconnect();
+      function assignSrc(item) {
+        if (item.img.getAttribute("src")) return;
+        // After a failed thumb→full fallback, keep using the full file.
+        item.img.src = item.img.dataset.fellBack === "2" ? item.src : item.display;
+      }
       items.forEach((item, index) => {
         if (index >= 8) return;
         item.img.loading = "eager";
         if (index < 4) item.img.fetchPriority = "high";
-        if (!item.img.getAttribute("src")) item.img.src = item.display;
+        assignSrc(item);
       });
       if (!("IntersectionObserver" in window)) {
-        items.forEach((item) => {
-          if (!item.img.getAttribute("src")) item.img.src = item.display;
-        });
+        items.forEach(assignSrc);
         return;
       }
       lazyObserver = new IntersectionObserver(
@@ -882,14 +891,18 @@
             const item = items.find((entryItem) => entryItem.el === entry.target);
             if (!item) return;
             if (entry.isIntersecting) {
-              if (!item.img.getAttribute("src")) item.img.src = item.display;
+              assignSrc(item);
               return;
             }
+            // Unload only on the large home wall. Collection pages are small, and
+            // clearing src after a thumb 404→full fallback left permanent gray holes.
+            if (!isScatterHome) return;
             const rect = entry.boundingClientRect;
             const far =
               rect.bottom < -window.innerHeight || rect.top > window.innerHeight * 2.5;
             if (far && item.img.getAttribute("src")) {
               item.img.removeAttribute("src");
+              delete item.img.dataset.fellBack;
               item.el.classList.add("is-pending");
             }
           });

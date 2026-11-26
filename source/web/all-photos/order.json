@@ -1,10 +1,50 @@
 {
-  "cols": 12,
+  "cols": 13,
   "rows": 7,
   "tile": 180,
   "gap": 1,
-  "hash": "1192c05a1d84dc5ad285d9adcd7b44e22e374862",
+  "hash": "f9470b84497ebce88622e99d03dc89478314f315",
   "images": [
+    {
+      "collectionId": "테스트용 새거",
+      "file": "0601-07_abbaabrrl.jpg",
+      "src": "collections/테스트용 새거/0601-07_abbaabrrl.jpg"
+    },
+    {
+      "collectionId": "테스트용 새거",
+      "file": "0601-12_lux.jpg",
+      "src": "collections/테스트용 새거/0601-12_lux.jpg"
+    },
+    {
+      "collectionId": "테스트용 새거",
+      "file": "thumbnail_0601-13_sex.jpg",
+      "src": "collections/테스트용 새거/thumbnail_0601-13_sex.jpg"
+    },
+    {
+      "collectionId": "테스트용 새거",
+      "file": "0601-15.jpg",
+      "src": "collections/테스트용 새거/0601-15.jpg"
+    },
+    {
+      "collectionId": "테스트용 새거",
+      "file": "0601-16.jpg",
+      "src": "collections/테스트용 새거/0601-16.jpg"
+    },
+    {
+      "collectionId": "테스트용 새거",
+      "file": "0602-03.jpg",
+      "src": "collections/테스트용 새거/0602-03.jpg"
+    },
+    {
+      "collectionId": "테스트용 새거",
+      "file": "0602-04.jpg",
+      "src": "collections/테스트용 새거/0602-04.jpg"
+    },
+    {
+      "collectionId": "테스트용 새거",
+      "file": "0602-05_lux.jpg",
+      "src": "collections/테스트용 새거/0602-05_lux.jpg"
+    },
     {
       "collectionId": "영월",
       "file": "0601-07_abbaabrrl.jpg",
@@ -17,8 +57,8 @@
     },
     {
       "collectionId": "영월",
-      "file": "0601-13_sex.jpg",
-      "src": "collections/영월/0601-13_sex.jpg"
+      "file": "thumbnail_0601-13_sex.jpg",
+      "src": "collections/영월/thumbnail_0601-13_sex.jpg"
     },
     {
       "collectionId": "영월",
