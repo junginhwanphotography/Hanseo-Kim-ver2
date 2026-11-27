@@ -151,8 +151,8 @@
     if (!collectionId || !stem) return "";
     // sm = mosaic tile, lg = lightbox — encode so Korean folder names resolve.
     const base = "thumbs/" + encodeURIComponent(collectionId) + "/" + encodeURIComponent(stem);
-    if (kind === "lg") return base + ".webp?v=5";
-    return base + ".sm.webp?v=5";
+    if (kind === "lg") return base + ".webp?v=8";
+    return base + ".sm.webp?v=8";
   }
 
   function manifestKeyFor(src) {
@@ -935,14 +935,19 @@
     });
     observer.observe(mosaic);
 
-    // Wait for size hints (already fetching in <head>), layout once, then load nearby thumbs.
+    // Lay out immediately with default ratios to avoid CLS, then refine from manifest.
+    runLayout();
+    armViewport();
     loadThumbManifest().then((manifest) => {
+      let changed = false;
       items.forEach((item) => {
         const size = item.key && manifest[item.key];
         if (!size || !size[0] || !size[1]) return;
-        ratioHints[item.key] = size[1] / size[0];
+        const next = size[1] / size[0];
+        if (Math.abs((ratioHints[item.key] || 0) - next) > 0.001) changed = true;
+        ratioHints[item.key] = next;
       });
-      runLayout();
+      if (changed || homeLayout) runLayout();
       armViewport();
     });
 

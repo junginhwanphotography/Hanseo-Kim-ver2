@@ -78,7 +78,8 @@ const server = http.createServer((req, res) => {
 
     const headers = { "Content-Type": contentType };
     if (ext === ".jpg" || ext === ".jpeg" || ext === ".png" || ext === ".webp" || ext === ".gif") {
-      headers["Cache-Control"] = "public, max-age=86400";
+      // Long cache locally; URLs already use ?v= for thumbs when quality/size changes.
+      headers["Cache-Control"] = "public, max-age=31536000, immutable";
     } else if (ext === ".html" || ext === ".css" || ext === ".js" || ext === ".rtf") {
       headers["Cache-Control"] = "no-store";
     }

@@ -7,15 +7,17 @@
 
 const fs = require("fs");
 const path = require("path");
-const { WEB, RECENT_LIGHT_DIR, RECENT_DARK_DIR } = require("./paths");
+const { WEB, RECENT_LIGHT_DIR, RECENT_DARK_DIR, BOOKS_DIR } = require("./paths");
 const { packScatter } = require("./scatter-pack");
 const { comparePhotoNames } = require("./photo-name");
 
-const MOSAIC_WIDTH = 800;
-const MOSAIC_QUALITY = 80;
-const LIGHTBOX_WIDTH = 1440;
-const LIGHTBOX_QUALITY = 86;
-const THUMB_VERSION = 5;
+const MOSAIC_WIDTH = 960;
+const MOSAIC_QUALITY = 84;
+const LIGHTBOX_WIDTH = 2560;
+const LIGHTBOX_QUALITY = 92;
+const BOOK_COVER_WIDTH = 900;
+const BOOK_COVER_QUALITY = 82;
+const THUMB_VERSION = 8;
 const HOME_PIN = ["레이아웃 테스트6", "레이아웃 테스트5", "레이아웃 테스트4"];
 
 function nfc(value) {
@@ -58,8 +60,9 @@ async function mapPool(items, limit, worker) {
 
 function collectJobs() {
   const roots = [
-    { dir: RECENT_LIGHT_DIR, theme: "light" },
-    { dir: RECENT_DARK_DIR, theme: "dark" },
+    { dir: RECENT_LIGHT_DIR, theme: "light", prefix: "" },
+    { dir: RECENT_DARK_DIR, theme: "dark", prefix: "" },
+    { dir: BOOKS_DIR, theme: "books", prefix: "books/" },
   ];
   const jobs = [];
   const seen = new Set();
@@ -68,8 +71,9 @@ function collectJobs() {
     if (!fs.existsSync(root.dir)) return;
     fs.readdirSync(root.dir, { withFileTypes: true }).forEach((entry) => {
       if (!entry.isDirectory()) return;
-      const collectionId = nfc(entry.name);
-      if (isHiddenCollection(collectionId)) return;
+      const folderId = nfc(entry.name);
+      if (isHiddenCollection(folderId)) return;
+      const collectionId = root.prefix + folderId;
       const dir = path.join(root.dir, entry.name);
       let files = [];
       try {
@@ -83,7 +87,13 @@ function collectJobs() {
         const key = collectionId + "/" + filename;
         if (seen.has(key)) return;
         seen.add(key);
-        jobs.push({ collectionId, filename, src, theme: root.theme });
+        jobs.push({
+          collectionId,
+          filename,
+          src,
+          theme: root.theme,
+          bookCover: root.theme === "books",
+        });
       });
     });
   });
@@ -91,8 +101,8 @@ function collectJobs() {
   return jobs;
 }
 
-async function writeVariant(sharp, src, dest, width, quality, srcMtime) {
-  if (fs.existsSync(dest) && fs.statSync(dest).mtimeMs >= srcMtime) return false;
+async function writeVariant(sharp, src, dest, width, quality, srcMtime, force) {
+  if (!force && fs.existsSync(dest) && fs.statSync(dest).mtimeMs >= srcMtime) return false;
   await sharp(src)
     .rotate()
     .resize({ width, withoutEnlargement: true })
@@ -111,6 +121,8 @@ async function buildGridThumbs() {
   const jobs = collectJobs();
   const outRoot = path.join(WEB, "thumbs");
   fs.mkdirSync(outRoot, { recursive: true });
+  const stampPath = path.join(outRoot, `.v${THUMB_VERSION}`);
+  const force = !fs.existsSync(stampPath);
   const manifest = {};
   let written = 0;
   let skipped = 0;
@@ -126,13 +138,45 @@ async function buildGridThumbs() {
     const width = meta.width || 0;
     const height = meta.height || 0;
     manifest[job.collectionId + "/" + job.filename] = [width, height];
-    const wroteLg = await writeVariant(sharp, job.src, destLg, LIGHTBOX_WIDTH, LIGHTBOX_QUALITY, srcStat.mtimeMs);
-    const wroteSm = await writeVariant(sharp, job.src, destSm, MOSAIC_WIDTH, MOSAIC_QUALITY, srcStat.mtimeMs);
+    if (job.bookCover) {
+      // Books list only needs a cover-sized tile; skip the large lightbox twin.
+      const wroteSm = await writeVariant(
+        sharp,
+        job.src,
+        destSm,
+        BOOK_COVER_WIDTH,
+        BOOK_COVER_QUALITY,
+        srcStat.mtimeMs,
+        force
+      );
+      if (wroteSm) written += 1;
+      else skipped += 1;
+      return;
+    }
+    const wroteLg = await writeVariant(
+      sharp,
+      job.src,
+      destLg,
+      LIGHTBOX_WIDTH,
+      LIGHTBOX_QUALITY,
+      srcStat.mtimeMs,
+      force
+    );
+    const wroteSm = await writeVariant(
+      sharp,
+      job.src,
+      destSm,
+      MOSAIC_WIDTH,
+      MOSAIC_QUALITY,
+      srcStat.mtimeMs,
+      force
+    );
     if (wroteLg || wroteSm) written += 1;
     else skipped += 1;
   });
 
   fs.writeFileSync(path.join(outRoot, "manifest.json"), JSON.stringify(manifest));
+  fs.writeFileSync(stampPath, String(Date.now()));
   writeHomeIndex(manifest);
   console.log(`🖼 그리드 미리보기 ${written}장 갱신, ${skipped}장 유지 (jobs ${jobs.length})`);
   return { written, skipped };

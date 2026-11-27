@@ -4,6 +4,31 @@
     return 4;
   }
 
+  function coverThumbUrl(src) {
+    const parts = String(src || "")
+      .normalize("NFC")
+      .split("/")
+      .filter(Boolean);
+    if (parts.length < 3) return "";
+    let collectionId = parts[1];
+    let file = parts[parts.length - 1];
+    try {
+      collectionId = decodeURIComponent(collectionId);
+      file = decodeURIComponent(file);
+    } catch (error) {
+      // Keep raw path segments when the URL is not encoded.
+    }
+    const stem = file.replace(/\.[^.]+$/, "");
+    if (!collectionId || !stem) return "";
+    return (
+      "thumbs/books/" +
+      encodeURIComponent(collectionId) +
+      "/" +
+      encodeURIComponent(stem) +
+      ".sm.webp?v=8"
+    );
+  }
+
   function list(root, projects) {
     root.replaceChildren();
     if (!projects.length) {
@@ -26,9 +51,18 @@
         window.HanseoTags && window.HanseoTags.coverFromImages
           ? window.HanseoTags.coverFromImages(project.images)
           : project.images && project.images[0];
-      img.src = cover || "";
+      const preview = coverThumbUrl(cover) || cover || "";
+      img.src = preview;
       img.alt = project.title || project.id;
       img.decoding = "async";
+      img.loading = "lazy";
+      if (cover && preview !== cover) {
+        img.addEventListener("error", () => {
+          if (img.dataset.fellBack) return;
+          img.dataset.fellBack = "1";
+          img.src = cover;
+        });
+      }
       thumb.appendChild(img);
       const title = document.createElement("a");
       title.className = "book-title";
