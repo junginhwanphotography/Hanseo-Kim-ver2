@@ -246,6 +246,10 @@
     let stage = null;
     let lastWidth = -1;
     let lazyObserver = null;
+    let idlePrefetchTimer = 0;
+    let idlePrefetchHandle = 0;
+    let idlePrefetchStopped = false;
+    let idlePrefetchOnScroll = null;
     const homeLayout = isScatterHome && project.homeLayout ? project.homeLayout : null;
     function ratioOf(item) {
       if (item.key && ratioHints[item.key]) return ratioHints[item.key];
@@ -883,23 +887,44 @@
       }, 32);
     }
 
+    function stopIdlePrefetch() {
+      idlePrefetchStopped = true;
+      if (idlePrefetchTimer) {
+        window.clearTimeout(idlePrefetchTimer);
+        idlePrefetchTimer = 0;
+      }
+      if (idlePrefetchHandle && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idlePrefetchHandle);
+        idlePrefetchHandle = 0;
+      }
+      if (idlePrefetchOnScroll) {
+        window.removeEventListener("scroll", idlePrefetchOnScroll, true);
+        idlePrefetchOnScroll = null;
+      }
+    }
+
     function armViewport() {
       if (lazyObserver) lazyObserver.disconnect();
-      function assignSrc(item) {
+      stopIdlePrefetch();
+      function assignSrc(item, priority) {
         if (item.img.getAttribute("src")) return;
+        if (priority) item.img.fetchPriority = priority;
         // After a failed thumb→full fallback, keep using the full file.
         item.img.src = item.img.dataset.fellBack === "2" ? item.src : item.display;
       }
+      // First screen stays eager. High priority is only for the two LCP candidates.
       items.forEach((item, index) => {
         if (index >= 8) return;
         item.img.loading = "eager";
-        if (index < 4) item.img.fetchPriority = "high";
+        if (index < 2) item.img.fetchPriority = "high";
         assignSrc(item);
       });
       if (!("IntersectionObserver" in window)) {
-        items.forEach(assignSrc);
+        items.forEach((item) => assignSrc(item));
         return;
       }
+      // Prefetch ~1.75–2 viewports ahead/behind so mid-page scroll rarely waits.
+      const prefetchMargin = Math.max(1200, Math.round(window.innerHeight * 1.85));
       lazyObserver = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -914,7 +939,8 @@
             if (!isScatterHome) return;
             const rect = entry.boundingClientRect;
             const far =
-              rect.bottom < -window.innerHeight || rect.top > window.innerHeight * 2.5;
+              rect.bottom < -window.innerHeight * 1.5 ||
+              rect.top > window.innerHeight * 4;
             if (far && item.img.getAttribute("src")) {
               item.img.removeAttribute("src");
               delete item.img.dataset.fellBack;
@@ -922,11 +948,76 @@
             }
           });
         },
-        { root: null, rootMargin: "1000px 0px", threshold: 0.01 }
+        { root: null, rootMargin: prefetchMargin + "px 0px", threshold: 0.01 }
       );
       items.forEach((item, index) => {
         if (index >= 8) lazyObserver.observe(item.el);
       });
+
+      // After the first paint settles, quietly warm the next tiles in small idle batches.
+      // Scatter order ≠ visual Y, so pick by on-screen top instead of array index.
+      idlePrefetchStopped = false;
+      const IDLE_BATCH = 3;
+      const IDLE_AHEAD = 4;
+      const IDLE_START_MS = 900;
+      const IDLE_GAP_MS = 160;
+
+      function scheduleIdlePrefetch(delay) {
+        if (idlePrefetchStopped) return;
+        if (idlePrefetchTimer) window.clearTimeout(idlePrefetchTimer);
+        idlePrefetchTimer = window.setTimeout(() => {
+          idlePrefetchTimer = 0;
+          if (idlePrefetchStopped) return;
+          if (typeof window.requestIdleCallback === "function") {
+            idlePrefetchHandle = window.requestIdleCallback(runIdlePrefetch, { timeout: 1200 });
+          } else {
+            runIdlePrefetch({ timeRemaining: () => 12, didTimeout: true });
+          }
+        }, delay);
+      }
+
+      function runIdlePrefetch(deadline) {
+        idlePrefetchHandle = 0;
+        if (idlePrefetchStopped) return;
+        if (typeof navigator !== "undefined" && navigator.connection && navigator.connection.saveData) {
+          return;
+        }
+        const limit = window.innerHeight * IDLE_AHEAD;
+        const pending = [];
+        for (let i = 0; i < items.length; i += 1) {
+          const item = items[i];
+          if (item.img.getAttribute("src")) continue;
+          const rect = item.el.getBoundingClientRect();
+          if (rect.bottom < -window.innerHeight) continue;
+          if (rect.top > limit) continue;
+          pending.push({ item, top: rect.top });
+        }
+        pending.sort((a, b) => a.top - b.top);
+        let loaded = 0;
+        for (let i = 0; i < pending.length && loaded < IDLE_BATCH; i += 1) {
+          if (deadline && typeof deadline.timeRemaining === "function" && deadline.timeRemaining() < 6) {
+            break;
+          }
+          assignSrc(pending[i].item, "low");
+          loaded += 1;
+        }
+        if (loaded) {
+          scheduleIdlePrefetch(IDLE_GAP_MS);
+          return;
+        }
+        const stillWaiting = items.some((item) => !item.img.getAttribute("src"));
+        if (!stillWaiting) return;
+        // Nothing in the ahead band yet — wake again on scroll instead of polling.
+        if (!idlePrefetchOnScroll) {
+          idlePrefetchOnScroll = () => {
+            idlePrefetchOnScroll = null;
+            scheduleIdlePrefetch(120);
+          };
+          window.addEventListener("scroll", idlePrefetchOnScroll, { passive: true, capture: true, once: true });
+        }
+      }
+
+      scheduleIdlePrefetch(IDLE_START_MS);
     }
 
     const observer = new ResizeObserver(() => {
@@ -1291,6 +1382,7 @@
       destroy() {
         cancelAnimationFrame(frame);
         if (softTimer) window.clearTimeout(softTimer);
+        stopIdlePrefetch();
         if (lazyObserver) lazyObserver.disconnect();
         observer.disconnect();
         window.removeEventListener("keydown", onKey, true);

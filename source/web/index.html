@@ -12,7 +12,7 @@
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,600;1,6..72,300&display=swap" rel="stylesheet" />
     </noscript>
-    <link rel="preload" href="sections/gallery.js?v=105" as="script" />
+    <link rel="preload" href="sections/gallery.js?v=106" as="script" />
     <link rel="preload" href="sections/recent.js?v=9" as="script" />
     <link rel="preload" href="sections/books.js?v=6" as="script" />
     <link rel="preload" href="sections/contact.js?v=4" as="script" />
@@ -61,18 +61,18 @@
         visualViewport.addEventListener("resize", fitPhoneFrame);
         visualViewport.addEventListener("scroll", fitPhoneFrame, { passive: true });
       }
-      // Preload only the first screen of home thumbs.
+      // Two high-priority image preloads. More than that contends with the LCP image.
       function hanseoStartThumbs(urls) {
         var hash = location.hash.replace(/^#/, "");
         if (hash && hash !== "intro") return;
         if (!urls || !urls.length || window.__hanseoThumbsStarted) return;
         window.__hanseoThumbsStarted = true;
-        urls.slice(0, 12).forEach(function (url, index) {
+        urls.slice(0, 2).forEach(function (url) {
           var link = document.createElement("link");
           link.rel = "preload";
           link.as = "image";
           link.href = url;
-          if (index < 8) link.fetchPriority = "high";
+          link.fetchPriority = "high";
           document.head.appendChild(link);
         });
       }
@@ -761,7 +761,7 @@
       sizeBoard();
       window.addEventListener("resize", sizeBoard);
     </script>
-    <script defer src="sections/gallery.js?v=105"></script>
+    <script defer src="sections/gallery.js?v=106"></script>
     <script defer src="sections/recent.js?v=9"></script>
     <script defer src="sections/books.js?v=6"></script>
     <script defer src="sections/contact.js?v=4"></script>
